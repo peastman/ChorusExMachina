@@ -1,0 +1,2 @@
+# chorus
+A chorus synthesizer
