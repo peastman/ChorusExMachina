@@ -1,14 +1,17 @@
 pub mod synth;
+pub mod phonemes;
 mod random;
+mod filter;
 
 use synth::Voice;
+use phonemes::Phonemes;
 
 use rodio::{OutputStream, Source};
 use std::thread::sleep;
 use std::time::Duration;
 
 struct Player {
-    voice: Vec<Voice>,
+    voice: Vec<Voice>
 }
 
 impl Iterator for Player {
@@ -19,7 +22,7 @@ impl Iterator for Player {
         for i in 0..self.voice.len() {
             sum += self.voice[i].generate();
         }
-        Some(0.01*sum)
+        Some(0.02*sum)
     }
 }
 
@@ -43,6 +46,9 @@ impl Source for Player {
 
 fn main() {
     let mut player = Player { voice: vec![synth::Voice::new(48000)] };
+    let phonemes = Phonemes::new();
+    let vowel = "y";
+    player.voice[0].set_vocal_shape(phonemes.get_vowel_shape(vowel).unwrap(), phonemes.get_nasal_coupling(vowel));
     let (_stream, handle) = OutputStream::try_default().unwrap();
     let _result = handle.play_raw(player.convert_samples().fade_in(Duration::from_millis(100)));
     sleep(Duration::from_millis(15000));
