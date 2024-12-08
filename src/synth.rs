@@ -130,12 +130,12 @@ pub struct Waveguide {
 }
 
 impl Waveguide {
-    pub fn new() -> Self {
+    pub fn new(length: usize) -> Self {
         let mut waveguide = Self {
-            area: vec![0.0; 44],
-            k: vec![0.0; 44],
-            right: vec![0.0; 44],
-            left: vec![0.0; 44]
+            area: vec![0.0; length],
+            k: vec![0.0; length],
+            right: vec![0.0; length],
+            left: vec![0.0; length]
         };
         waveguide.compute_reflections();
         waveguide
@@ -167,18 +167,22 @@ pub struct Voice {
     glottis: Glottis,
     vocal: Waveguide,
     nasal: Waveguide,
-    nasal_coupling: f32
+    nasal_coupling: f32,
+    coupling_position: usize
 }
 
 impl Voice {
     pub fn new(sample_rate: i32) -> Self {
-        Voice {
+        let mut voice = Voice {
             first: true,
             glottis: Glottis::new(sample_rate),
-            vocal: Waveguide::new(),
-            nasal: Waveguide::new(),
-            nasal_coupling: 0.0
-        }
+            vocal: Waveguide::new(44),
+            nasal: Waveguide::new(28),
+            nasal_coupling: 0.0,
+            coupling_position: 20
+        };
+        voice.nasal.set_shape(&vec![1.52, 1.67, 1.86, 2.35, 2.92, 3.46, 4.16, 4.41, 4.01, 3.24, 3.22, 3.26, 3.17, 2.81, 2.65, 2.56, 2.5, 2.34, 1.94, 1.43, 1.05, 1.41, 1.71, 1.6, 1.48, 1.54, 1.23, 0.885]);
+        voice
     }
 
     pub fn set_vocal_shape(&mut self, shape: &Vec<f32>, nasal_coupling: f32) {
@@ -189,7 +193,10 @@ impl Voice {
     pub fn generate(&mut self) -> f32 {
         let excitation = self.glottis.generate();
         let n = self.vocal.right.len();
+        let nasal_n = self.nasal.right.len();
         for j in 0..2 {
+            // Propagate waves in the vocal tract.
+
             let right = self.vocal.right.clone();
             let left = self.vocal.left.clone();
             let right_output = &mut self.vocal.right;
@@ -201,7 +208,33 @@ impl Voice {
                 right_output[i] = right[i-1] - w;
                 left_output[i-1] = left[i] + w;
             }
+
+            // Propagate waves in the nasal cavity.
+
+            let nasal_right = self.nasal.right.clone();
+            let nasal_left = self.nasal.left.clone();
+            let nasal_right_output = &mut self.nasal.right;
+            let nasal_left_output = &mut self.nasal.left;
+            let nasal_k = &self.nasal.k;
+            nasal_right_output[0] = nasal_left[0];
+            for i in 1..nasal_n {
+                let w = nasal_k[i] * (nasal_right[i-1]+nasal_left[i]);
+                nasal_right_output[i] = nasal_right[i-1] - w;
+                nasal_left_output[i-1] = nasal_left[i] + w;
+            }
+
+            // Connect them together.
+
+            if self.nasal_coupling != 0.0 {
+                let pos = self.coupling_position;
+                let w1 = self.nasal_coupling;
+                let w2 = 1.0-self.nasal_coupling;
+                nasal_right_output[0] = w2*nasal_right_output[0] + w1*right_output[pos];
+                nasal_left_output[0] = w2*nasal_left_output[0] + w1*left_output[pos];
+                right_output[pos] = w1*nasal_right_output[0] + w2*right_output[pos];
+                left_output[pos] = w1*nasal_left_output[0] + w2*left_output[pos];
+            }
         }
-        self.vocal.right[n-1]
+        self.vocal.right[n-1] + self.nasal.right[nasal_n-1]
     }
 }

@@ -41,9 +41,9 @@ impl Phonemes {
         shape_map.insert(String::from("&"), vec![0.801, 0.755, 0.641, 0.533, 0.445, 0.384, 1.62, 4.43, 5.42, 5.69, 5.12, 4.55, 4.12, 4.22, 4.22, 4.04, 3.8, 3.65, 3.64, 3.8, 4.18, 4.71, 4.75, 3.98, 3.83, 3.53, 2.97, 2.56, 2.18, 1.87, 1.95, 2.44, 2.97, 3.28, 3.51, 3.47, 3.19, 2.66, 2.2, 1.81, 1.29, 0.899, 1.67, 2.5]);
 
         let mut nasal_coupling = HashMap::new();
-        nasal_coupling.insert(String::from("m"), 1.04);
-        nasal_coupling.insert(String::from("n"), 1.26);
-        nasal_coupling.insert(String::from("N"), 1.09);
+        nasal_coupling.insert(String::from("m"), 0.5);
+        nasal_coupling.insert(String::from("n"), 0.5);
+        nasal_coupling.insert(String::from("N"), 0.5);
         Self { shape_map: shape_map, nasal_coupling: nasal_coupling }
     }
 
