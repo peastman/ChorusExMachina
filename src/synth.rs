@@ -28,8 +28,7 @@ pub struct Glottis {
     ta: f32,
     tp: f32,
     te: f32,
-    shift: f32,
-    step: i64
+    shift: f32
 }
 
 impl Glottis {
@@ -61,12 +60,11 @@ impl Glottis {
             ta: 0.0,
             tp: 0.0,
             te: 0.0,
-            shift: 0.0,
-            step: 0
+            shift: 0.0
         }
     }
 
-    pub fn generate(&mut self) -> f32 {
+    pub fn generate(&mut self, step: i64) -> f32 {
         // If rd has changed, recalculate all the parameters that depend on it.
 
         if !self.params_valid {
@@ -85,13 +83,12 @@ impl Glottis {
 
         // Randomly vary aspects of the output to make it sound more natural.
 
-        if self.step % 1000 == 0 {
+        if step % 1000 == 0 {
             self.frequency_drift = 0.99*self.frequency_drift + 0.1*self.random.get_normal();
             self.volume_drift = 0.99*self.volume_drift + 0.1*self.random.get_normal();
             self.vibrato_frequency_drift = 0.99*self.vibrato_frequency_drift + 0.1*self.random.get_normal();
             self.vibrato_amplitude_drift = 0.99*self.vibrato_amplitude_drift + 0.1*self.random.get_normal();
         }
-        self.step += 1;
 
         // Compute the instantaneous frequency and update the current phase.
         // This depends on the primary frequency of the note, vibrato, and
@@ -101,7 +98,7 @@ impl Glottis {
         let vibrato_amplitude = self.vibrato_amplitude * (1.0+self.vibrato_amplitude_drift_amplitude*self.vibrato_amplitude_drift);
         let vibrato_offset = vibrato_freq / self.sample_rate as f32;
         self.vibrato_phase = (self.vibrato_phase+vibrato_offset) % 1.0;
-        let freq = self.frequency * (1.0+self.frequency_drift_amplitude*self.frequency_drift) * (1.0+self.vibrato_amplitude*((2.0*PI*self.vibrato_phase).sin()));
+        let freq = self.frequency * (1.0+self.frequency_drift_amplitude*self.frequency_drift) * (1.0+vibrato_amplitude*((2.0*PI*self.vibrato_phase).sin()));
         let offset = freq / self.sample_rate as f32;
         self.phase = (self.phase+offset) % 1.0;
         let t = self.phase;
@@ -163,10 +160,10 @@ impl Waveguide {
 }
 
 pub struct Voice {
-    first: bool,
     glottis: Glottis,
     vocal: Waveguide,
     nasal: Waveguide,
+    volume: f32,
     nasal_coupling: f32,
     coupling_position: usize
 }
@@ -174,10 +171,10 @@ pub struct Voice {
 impl Voice {
     pub fn new(sample_rate: i32) -> Self {
         let mut voice = Voice {
-            first: true,
             glottis: Glottis::new(sample_rate),
             vocal: Waveguide::new(44),
             nasal: Waveguide::new(28),
+            volume: 1.0,
             nasal_coupling: 0.0,
             coupling_position: 20
         };
@@ -185,16 +182,21 @@ impl Voice {
         voice
     }
 
+    pub fn set_volume(&mut self, volume: f32) {
+        self.volume = volume;
+    }
+
     pub fn set_vocal_shape(&mut self, shape: &Vec<f32>, nasal_coupling: f32) {
         self.vocal.set_shape(shape);
         self.nasal_coupling = nasal_coupling;
     }
 
-    pub fn generate(&mut self) -> f32 {
-        let excitation = self.glottis.generate();
+    pub fn generate(&mut self, step: i64) -> f32 {
+        let excitation = self.volume*self.glottis.generate(step);
         let n = self.vocal.right.len();
         let nasal_n = self.nasal.right.len();
-        for j in 0..2 {
+        let damping = 0.995;
+        for _substep in 0..2 {
             // Propagate waves in the vocal tract.
 
             let right = self.vocal.right.clone();
@@ -205,8 +207,8 @@ impl Voice {
             right_output[0] = excitation + left[0];
             for i in 1..n {
                 let w = k[i] * (right[i-1]+left[i]);
-                right_output[i] = right[i-1] - w;
-                left_output[i-1] = left[i] + w;
+                right_output[i] = damping*(right[i-1] - w);
+                left_output[i-1] = damping*(left[i] + w);
             }
 
             // Propagate waves in the nasal cavity.
@@ -219,8 +221,8 @@ impl Voice {
             nasal_right_output[0] = nasal_left[0];
             for i in 1..nasal_n {
                 let w = nasal_k[i] * (nasal_right[i-1]+nasal_left[i]);
-                nasal_right_output[i] = nasal_right[i-1] - w;
-                nasal_left_output[i-1] = nasal_left[i] + w;
+                nasal_right_output[i] = damping*(nasal_right[i-1] - w);
+                nasal_left_output[i-1] = damping*(nasal_left[i] + w);
             }
 
             // Connect them together.

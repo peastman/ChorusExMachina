@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub struct Phonemes {
     shape_map: HashMap<String, Vec<f32>>,
-    nasal_coupling: HashMap<String, f32>
+    nasal_vowels: HashSet<String>
 }
 
 impl Phonemes {
@@ -40,11 +40,11 @@ impl Phonemes {
         shape_map.insert(String::from("9"), vec![0.801, 0.746, 0.633, 0.529, 0.441, 0.371, 0.988, 2.93, 3.63, 3.8, 2.94, 2.27, 1.8, 2.17, 2.39, 2.55, 2.7, 3.02, 3.59, 4.26, 4.98, 5.15, 4.35, 4.22, 3.97, 3.62, 3.42, 3.19, 3.05, 3.35, 4.01, 4.53, 4.82, 5.0, 4.93, 4.52, 3.97, 3.5, 3.07, 2.74, 2.73, 1.68, 1.25, 1.14]);
         shape_map.insert(String::from("&"), vec![0.801, 0.755, 0.641, 0.533, 0.445, 0.384, 1.62, 4.43, 5.42, 5.69, 5.12, 4.55, 4.12, 4.22, 4.22, 4.04, 3.8, 3.65, 3.64, 3.8, 4.18, 4.71, 4.75, 3.98, 3.83, 3.53, 2.97, 2.56, 2.18, 1.87, 1.95, 2.44, 2.97, 3.28, 3.51, 3.47, 3.19, 2.66, 2.2, 1.81, 1.29, 0.899, 1.67, 2.5]);
 
-        let mut nasal_coupling = HashMap::new();
-        nasal_coupling.insert(String::from("m"), 0.5);
-        nasal_coupling.insert(String::from("n"), 0.5);
-        nasal_coupling.insert(String::from("N"), 0.5);
-        Self { shape_map: shape_map, nasal_coupling: nasal_coupling }
+        let mut nasal_vowels = HashSet::new();
+        nasal_vowels.insert(String::from("m"));
+        nasal_vowels.insert(String::from("n"));
+        nasal_vowels.insert(String::from("N"));
+        Self { shape_map: shape_map, nasal_vowels: nasal_vowels }
     }
 
     pub fn get_vowel_shape(&self, vowel: &str) -> Option<&Vec<f32>> {
@@ -52,9 +52,9 @@ impl Phonemes {
     }
 
     pub fn get_nasal_coupling(&self, vowel: &str) -> f32 {
-        match self.nasal_coupling.get(vowel) {
-            Some(x) => *x,
-            None => 0.0
+        if self.nasal_vowels.contains(vowel) {
+            return 0.5;
         }
+        0.0
     }
 }

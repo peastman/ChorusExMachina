@@ -1,28 +1,26 @@
 pub mod synth;
 pub mod phonemes;
+mod director;
 mod random;
 mod filter;
 
 use synth::Voice;
 use phonemes::Phonemes;
+use director::{Director, TransitionData};
 
 use rodio::{OutputStream, Source};
 use std::thread::sleep;
 use std::time::Duration;
 
 struct Player {
-    voice: Vec<Voice>
+    director: Director
 }
 
 impl Iterator for Player {
     type Item = f32;
 
     fn next(&mut self) -> Option<f32> {
-        let mut sum = 0.0;
-        for i in 0..self.voice.len() {
-            sum += self.voice[i].generate();
-        }
-        Some(0.02*sum)
+        Some(self.director.generate())
     }
 }
 
@@ -45,10 +43,16 @@ impl Source for Player {
 }
 
 fn main() {
-    let mut player = Player { voice: vec![synth::Voice::new(48000)] };
+    let mut director = Director::new(vec![synth::Voice::new(48000)]);
+    director.add_transition(0, 10000, TransitionData::VolumeChange {start_volume: 0.0, end_volume: 1.0});
     let phonemes = Phonemes::new();
-    let vowel = "m";
-    player.voice[0].set_vocal_shape(phonemes.get_vowel_shape(vowel).unwrap(), phonemes.get_nasal_coupling(vowel));
+    let start_shape = phonemes.get_vowel_shape("i").unwrap();
+    let end_shape = phonemes.get_vowel_shape("A").unwrap();
+    let start_nasal_coupling = phonemes.get_nasal_coupling("i");
+    let end_nasal_coupling = phonemes.get_nasal_coupling("A");
+    director.add_transition(0, 0, TransitionData::ShapeChange {start_shape: start_shape.clone(), end_shape: start_shape.clone(), start_nasal_coupling: start_nasal_coupling, end_nasal_coupling: start_nasal_coupling});
+    director.add_transition(7000, 5000, TransitionData::ShapeChange {start_shape: start_shape.clone(), end_shape: end_shape.clone(), start_nasal_coupling: start_nasal_coupling, end_nasal_coupling: end_nasal_coupling});
+    let mut player = Player { director: director };
     let (_stream, handle) = OutputStream::try_default().unwrap();
     let _result = handle.play_raw(player.convert_samples().fade_in(Duration::from_millis(100)));
     sleep(Duration::from_millis(10000));
