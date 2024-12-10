@@ -1,12 +1,6 @@
-pub mod synth;
-pub mod phonemes;
-mod director;
-mod random;
-mod filter;
-
-use synth::Voice;
-use phonemes::Phonemes;
-use director::{Director, TransitionData};
+use chorus::voice;
+use chorus::phonemes::Phonemes;
+use chorus::director::{Director, TransitionData};
 
 use rodio::{OutputStream, Source};
 use std::thread::sleep;
@@ -43,17 +37,17 @@ impl Source for Player {
 }
 
 fn main() {
-    let mut director = Director::new(vec![synth::Voice::new(48000)]);
-    director.add_transition(0, 10000, TransitionData::VolumeChange {start_volume: 0.0, end_volume: 1.0});
-    let phonemes = Phonemes::new();
-    let start_shape = phonemes.get_vowel_shape("i").unwrap();
-    let end_shape = phonemes.get_vowel_shape("A").unwrap();
-    let start_nasal_coupling = phonemes.get_nasal_coupling("i");
-    let end_nasal_coupling = phonemes.get_nasal_coupling("A");
-    director.add_transition(0, 0, TransitionData::ShapeChange {start_shape: start_shape.clone(), end_shape: start_shape.clone(), start_nasal_coupling: start_nasal_coupling, end_nasal_coupling: start_nasal_coupling});
-    director.add_transition(7000, 5000, TransitionData::ShapeChange {start_shape: start_shape.clone(), end_shape: end_shape.clone(), start_nasal_coupling: start_nasal_coupling, end_nasal_coupling: end_nasal_coupling});
-    let mut player = Player { director: director };
+    // director.add_transition(0, 10000, TransitionData::VolumeChange {start_volume: 0.0, end_volume: 1.0});
+    // let phonemes = Phonemes::new();
+    // let start_shape = phonemes.get_vowel_shape('i').unwrap();
+    // let end_shape = phonemes.get_vowel_shape('A').unwrap();
+    // let start_nasal_coupling = phonemes.get_nasal_coupling('i');
+    // let end_nasal_coupling = phonemes.get_nasal_coupling('A');
+    // director.add_transition(0, 0, TransitionData::ShapeChange {start_shape: start_shape.clone(), end_shape: start_shape.clone(), start_nasal_coupling: start_nasal_coupling, end_nasal_coupling: start_nasal_coupling});
+    // director.add_transition(7000, 5000, TransitionData::ShapeChange {start_shape: start_shape.clone(), end_shape: end_shape.clone(), start_nasal_coupling: start_nasal_coupling, end_nasal_coupling: end_nasal_coupling});
+    let mut player = Player { director: Director::new(vec![voice::Voice::new(48000)]) };
+    player.director.note_on("iA", 60, 1.0);
     let (_stream, handle) = OutputStream::try_default().unwrap();
-    let _result = handle.play_raw(player.convert_samples().fade_in(Duration::from_millis(100)));
+    let _result = handle.play_raw(player.convert_samples());
     sleep(Duration::from_millis(10000));
 }

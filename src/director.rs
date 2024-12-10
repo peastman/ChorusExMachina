@@ -1,5 +1,6 @@
-use crate::synth::Voice;
+use crate::voice::Voice;
 use crate::phonemes::Phonemes;
+use crate::syllable::Syllable;
 
 pub struct Transition {
     start: i64,
@@ -12,19 +13,112 @@ pub enum TransitionData {
     ShapeChange {start_shape: Vec<f32>, end_shape: Vec<f32>, start_nasal_coupling: f32, end_nasal_coupling: f32}
 }
 
+struct Note {
+    syllable: Syllable,
+    note_index: i32,
+    frequency: f32,
+    velocity: f32
+}
+
 pub struct Director {
     voices: Vec<Voice>,
+    phonemes: Phonemes,
     step: i64,
-    transitions: Vec<Transition>
+    transitions: Vec<Transition>,
+    current_note: Option<Note>,
+    shape_after_transitions: Vec<f32>,
+    nasal_coupling_after_transitions: f32,
+    volume_after_transitions: f32
 }
 
 impl Director {
     pub fn new(voices: Vec<Voice>) -> Self {
         Self {
             voices: voices,
+            phonemes: Phonemes::new(),
             step: 0,
-            transitions: vec![]
+            transitions: vec![],
+            current_note: None,
+            shape_after_transitions: vec![0.0; 44],
+            nasal_coupling_after_transitions: 0.0,
+            volume_after_transitions: 0.0
         }
+    }
+
+    pub fn note_on(&mut self, syllable: &str, note_index: i32, velocity: f32) -> Result<(), &'static str> {
+        let new_syllable = Syllable::build(syllable)?;
+        let frequency = 440.0 * f32::powf(2.0, (note_index-69) as f32/12.0);
+        let mut delay = 0;
+        for transition in &self.transitions {
+            delay = i64::max(delay, transition.end-self.step);
+        }
+        if let Some(note) = &self.current_note {
+            for c in &note.syllable.final_vowels.clone() {
+                delay = self.add_transient_vowel(delay, *c);
+            }
+        }
+        else {
+            self.add_transition(delay, 5000, TransitionData::VolumeChange {start_volume: self.volume_after_transitions, end_volume: 1.0});
+        }
+        for c in &new_syllable.initial_vowels {
+            delay = self.add_transient_vowel(delay, *c);
+        }
+        let shape = self.phonemes.get_vowel_shape(new_syllable.main_vowel).unwrap();
+        let nasal_coupling = self.phonemes.get_nasal_coupling(new_syllable.main_vowel);
+        self.add_transition(delay, 7000, TransitionData::ShapeChange {
+            start_shape: self.shape_after_transitions.clone(),
+            end_shape: shape.clone(),
+            start_nasal_coupling: self.nasal_coupling_after_transitions,
+            end_nasal_coupling: nasal_coupling
+        });
+        let note = Note {
+            syllable: new_syllable,
+            note_index: note_index,
+            frequency: frequency,
+            velocity: velocity
+        };
+        self.current_note = Some(note);
+        Ok(())
+    }
+
+    pub fn note_off(&mut self) {
+        let mut delay = 0;
+        for transition in &self.transitions {
+            delay = i64::max(delay, transition.end-self.step);
+        }
+        if let Some(note) = &self.current_note {
+            for c in &note.syllable.final_vowels.clone() {
+                delay = self.add_transient_vowel(delay, *c);
+            }
+        }
+        self.add_transition(delay, 5000, TransitionData::VolumeChange {start_volume: self.volume_after_transitions, end_volume: 0.0});
+        self.current_note = None;
+    }
+
+    fn add_transient_vowel(&mut self, delay: i64, c: char) -> i64 {
+        let shape = self.phonemes.get_vowel_shape(c).unwrap();
+        let nasal_coupling = self.phonemes.get_nasal_coupling(c);
+        self.add_transition(delay, 5000, TransitionData::ShapeChange {
+            start_shape: self.shape_after_transitions.clone(),
+            end_shape: shape.clone(),
+            start_nasal_coupling: self.nasal_coupling_after_transitions,
+            end_nasal_coupling: nasal_coupling
+        });
+        delay+8000
+    }
+
+    pub fn add_transition(&mut self, delay: i64, duration: i64, data: TransitionData) {
+        let transition = Transition { start: self.step+delay, end: self.step+delay+duration, data: data };
+        match &transition.data {
+            TransitionData::VolumeChange {start_volume, end_volume} => {
+                self.volume_after_transitions = *end_volume;
+            }
+            TransitionData::ShapeChange {start_shape, end_shape, start_nasal_coupling, end_nasal_coupling} => {
+                self.shape_after_transitions = end_shape.clone();
+                self.nasal_coupling_after_transitions = *end_nasal_coupling;
+            }
+        }
+        self.transitions.push(transition);
     }
 
     pub fn generate(&mut self) -> f32 {
@@ -37,11 +131,6 @@ impl Director {
         }
         self.step += 1;
         0.04*sum
-    }
-
-    pub fn add_transition(&mut self, delay: i64, duration: i64, data: TransitionData) {
-        let transition = Transition { start: self.step+delay, end: self.step+delay+duration, data: data };
-        self.transitions.push(transition);
     }
 
     fn update_transitions(&mut self) {
