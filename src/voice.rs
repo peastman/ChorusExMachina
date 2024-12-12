@@ -191,6 +191,10 @@ impl Voice {
         self.nasal_coupling = nasal_coupling;
     }
 
+    pub fn set_frequency(&mut self, frequency: f32) {
+        self.glottis.frequency = frequency;
+    }
+
     pub fn generate(&mut self, step: i64) -> f32 {
         let excitation = self.volume*self.glottis.generate(step);
         let n = self.vocal.right.len();
