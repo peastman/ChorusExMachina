@@ -21,7 +21,7 @@ pub struct Glottis {
     vibrato_amplitude_drift: f32,
     random: Random,
     noise_filter: LowpassFilter,
-    params_valid: bool,
+    last_rd: f32,
     alpha: f32,
     epsilon: f32,
     e0: f32,
@@ -53,7 +53,7 @@ impl Glottis {
             vibrato_amplitude_drift: 0.0,
             random: random,
             noise_filter: LowpassFilter::new(sample_rate, 2000.0),
-            params_valid: false,
+            last_rd: 0.0,
             alpha: 0.0,
             epsilon: 0.0,
             e0: 0.0,
@@ -67,7 +67,7 @@ impl Glottis {
     pub fn generate(&mut self, step: i64) -> f32 {
         // If rd has changed, recalculate all the parameters that depend on it.
 
-        if !self.params_valid {
+        if self.rd != self.last_rd {
             let ra = 0.048*self.rd - 0.01;
             let rk = 0.118*self.rd + 0.224;
             let rg = 0.25*rk / (0.11*self.rd / (0.5+1.2*rk) - ra);
@@ -78,7 +78,7 @@ impl Glottis {
             self.alpha = 8.08*(-1.07*self.rd).exp();
             self.e0 = 1.0/((self.alpha*self.te).exp()*(PI*self.te/self.tp).sin());
             self.shift = (-self.epsilon*(1.0-self.te)).exp();
-            self.params_valid = true;
+            self.last_rd = self.rd;
         }
 
         // Randomly vary aspects of the output to make it sound more natural.
@@ -165,7 +165,8 @@ pub struct Voice {
     nasal: Waveguide,
     volume: f32,
     nasal_coupling: f32,
-    coupling_position: usize
+    coupling_position: usize,
+    nasal_off_after_step: i64
 }
 
 impl Voice {
@@ -176,7 +177,8 @@ impl Voice {
             nasal: Waveguide::new(28),
             volume: 1.0,
             nasal_coupling: 0.0,
-            coupling_position: 20
+            coupling_position: 20,
+            nasal_off_after_step: 0
         };
         voice.nasal.set_shape(&vec![1.52, 1.67, 1.86, 2.35, 2.92, 3.46, 4.16, 4.41, 4.01, 3.24, 3.22, 3.26, 3.17, 2.81, 2.65, 2.56, 2.5, 2.34, 1.94, 1.43, 1.05, 1.41, 1.71, 1.6, 1.48, 1.54, 1.23, 0.885]);
         voice
@@ -193,6 +195,14 @@ impl Voice {
 
     pub fn set_frequency(&mut self, frequency: f32) {
         self.glottis.frequency = frequency;
+    }
+
+    pub fn set_rd(&mut self, rd: f32) {
+        self.glottis.rd = rd;
+    }
+
+    pub fn set_noise(&mut self, noise: f32) {
+        self.glottis.noise = noise;
     }
 
     pub fn generate(&mut self, step: i64) -> f32 {
@@ -214,31 +224,35 @@ impl Voice {
                 right_output[i] = damping*(right[i-1] - w);
                 left_output[i-1] = damping*(left[i] + w);
             }
-
-            // Propagate waves in the nasal cavity.
-
-            let nasal_right = self.nasal.right.clone();
-            let nasal_left = self.nasal.left.clone();
-            let nasal_right_output = &mut self.nasal.right;
-            let nasal_left_output = &mut self.nasal.left;
-            let nasal_k = &self.nasal.k;
-            nasal_right_output[0] = nasal_left[0];
-            for i in 1..nasal_n {
-                let w = nasal_k[i] * (nasal_right[i-1]+nasal_left[i]);
-                nasal_right_output[i] = damping*(nasal_right[i-1] - w);
-                nasal_left_output[i-1] = damping*(nasal_left[i] + w);
+            if self.nasal_coupling > 0.0 {
+                self.nasal_off_after_step = step+500;
             }
+            if step < self.nasal_off_after_step {
+                // Propagate waves in the nasal cavity.
 
-            // Connect them together.
+                let nasal_right = self.nasal.right.clone();
+                let nasal_left = self.nasal.left.clone();
+                let nasal_right_output = &mut self.nasal.right;
+                let nasal_left_output = &mut self.nasal.left;
+                let nasal_k = &self.nasal.k;
+                nasal_right_output[0] = nasal_left[0];
+                for i in 1..nasal_n {
+                    let w = nasal_k[i] * (nasal_right[i-1]+nasal_left[i]);
+                    nasal_right_output[i] = damping*(nasal_right[i-1] - w);
+                    nasal_left_output[i-1] = damping*(nasal_left[i] + w);
+                }
 
-            if self.nasal_coupling != 0.0 {
-                let pos = self.coupling_position;
-                let w1 = self.nasal_coupling;
-                let w2 = 1.0-self.nasal_coupling;
-                nasal_right_output[0] = w2*nasal_right_output[0] + w1*right_output[pos];
-                nasal_left_output[0] = w2*nasal_left_output[0] + w1*left_output[pos];
-                right_output[pos] = w1*nasal_right_output[0] + w2*right_output[pos];
-                left_output[pos] = w1*nasal_left_output[0] + w2*left_output[pos];
+                // Connect them together.
+
+                if self.nasal_coupling != 0.0 {
+                    let pos = self.coupling_position;
+                    let w1 = self.nasal_coupling;
+                    let w2 = 1.0-self.nasal_coupling;
+                    nasal_right_output[0] = w2*nasal_right_output[0] + w1*right_output[pos];
+                    nasal_left_output[0] = w2*nasal_left_output[0] + w1*left_output[pos];
+                    right_output[pos] = w1*nasal_right_output[0] + w2*right_output[pos];
+                    left_output[pos] = w1*nasal_left_output[0] + w2*left_output[pos];
+                }
             }
         }
         self.vocal.right[n-1] + self.nasal.right[nasal_n-1]

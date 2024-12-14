@@ -7,7 +7,9 @@ pub enum Message {
     NoteOn {syllable: String, note_index: i32, velocity: f32},
     NoteOff,
     SetVolume {volume: f32},
-    SetPitchBend {semitones: f32}
+    SetPitchBend {semitones: f32},
+    SetRd {rd: f32},
+    SetNoise {noise: f32}
 }
 
 struct Transition {
@@ -39,6 +41,7 @@ pub struct Director {
     envelope: f32,
     frequency: f32,
     bend: f32,
+    off_after_step: i64,
     shape_after_transitions: Vec<f32>,
     nasal_coupling_after_transitions: f32,
     envelope_after_transitions: f32,
@@ -58,6 +61,7 @@ impl Director {
             envelope: 0.0,
             frequency: 1.0,
             bend: 1.0,
+            off_after_step: 0,
             shape_after_transitions: vec![0.0; 44],
             nasal_coupling_after_transitions: 0.0,
             envelope_after_transitions: 0.0,
@@ -74,10 +78,12 @@ impl Director {
             delay = i64::max(delay, transition.end-self.step);
         }
         if let Some(note) = &self.current_note {
+            let current_note_index = note.note_index;
             for c in &note.syllable.final_vowels.clone() {
                 delay = self.add_transient_vowel(delay, *c);
             }
-            self.add_transition(delay, 2000, TransitionData::FrequencyChange {start_frequency: self.frequency_after_transitions, end_frequency: frequency});
+            let transition_time = i32::min(1000*(current_note_index-note_index).abs(), 5000);
+            self.add_transition(delay, transition_time as i64, TransitionData::FrequencyChange {start_frequency: self.frequency_after_transitions, end_frequency: frequency});
         }
         else {
             self.add_transition(delay, 0, TransitionData::FrequencyChange {start_frequency: frequency, end_frequency: frequency});
@@ -122,13 +128,13 @@ impl Director {
     fn add_transient_vowel(&mut self, delay: i64, c: char) -> i64 {
         let shape = self.phonemes.get_vowel_shape(c).unwrap();
         let nasal_coupling = self.phonemes.get_nasal_coupling(c);
-        self.add_transition(delay, 5000, TransitionData::ShapeChange {
+        self.add_transition(delay, 3000, TransitionData::ShapeChange {
             start_shape: self.shape_after_transitions.clone(),
             end_shape: shape.clone(),
             start_nasal_coupling: self.nasal_coupling_after_transitions,
             end_nasal_coupling: nasal_coupling
         });
-        delay+8000
+        delay+3000
     }
 
     fn add_transition(&mut self, delay: i64, duration: i64, data: TransitionData) {
@@ -153,12 +159,18 @@ impl Director {
             self.process_messages();
             self.update_transitions();
         }
+        self.step += 1;
+        if self.volume > 0.0 && self.envelope > 0.0 {
+            self.off_after_step = self.step+500;
+        }
+        if self.step >= self.off_after_step {
+            return 0.0;
+        }
         let mut sum = 0.0;
         for voice in &mut self.voices {
             sum += voice.generate(self.step);
         }
-        self.step += 1;
-        0.04*sum
+        0.08*sum
     }
 
     fn process_messages(&mut self) {
@@ -179,6 +191,16 @@ impl Director {
                         Message::SetPitchBend {semitones} => {
                             self.bend = f32::powf(2.0, semitones as f32/12.0);
                             self.update_frequency();
+                        }
+                        Message::SetRd {rd} => {
+                            for voice in &mut self.voices {
+                                voice.set_rd(rd);
+                            }
+                        }
+                        Message::SetNoise {noise} => {
+                            for voice in &mut self.voices {
+                                voice.set_noise(noise);
+                            }
                         }
                     }
                 }

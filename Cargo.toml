@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 rodio = "0.20.1"
 midir = "0.10.1"
+egui = "0.29.1"
+eframe = "0.29.1"
