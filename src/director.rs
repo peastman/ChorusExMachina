@@ -82,7 +82,7 @@ impl Director {
             for c in &note.syllable.final_vowels.clone() {
                 delay = self.add_transient_vowel(delay, *c);
             }
-            let transition_time = i32::min(1000*(current_note_index-note_index).abs(), 5000);
+            let transition_time = 1100 + 270*(current_note_index-note_index).abs();
             self.add_transition(delay, transition_time as i64, TransitionData::FrequencyChange {start_frequency: self.frequency_after_transitions, end_frequency: frequency});
         }
         else {
