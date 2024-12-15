@@ -1,6 +1,6 @@
-use chorus::voice;
 use chorus::phonemes::Phonemes;
 use chorus::director::{Director, Message};
+use chorus::VoicePart;
 
 use rodio::{OutputStream, Source};
 use midir::MidiInput;
@@ -80,19 +80,13 @@ impl App for MainGui {
                 ui.label("Syllable");
                 ui.text_edit_singleline(&mut controller.syllable);
             });
-            if ui.add(egui::Slider::new(&mut self.rd, 0.5..=2.7).text("Rd")).dragged() {
-                controller.sender.send(Message::SetRd {rd: self.rd});
-            }
-            if ui.add(egui::Slider::new(&mut self.noise, 0.0..=0.1).text("Noise")).dragged() {
-                controller.sender.send(Message::SetNoise {noise: self.noise});
-            };
         });
     }
 }
 
 fn main() -> Result<(), eframe::Error> {
     let (sender, receiver) = mpsc::channel();
-    let mut player = Player { director: Director::new(vec![voice::Voice::new(48000)], receiver) };
+    let mut player = Player { director: Director::new(VoicePart::Alto, 1, receiver) };
     let (_stream, handle) = OutputStream::try_default().unwrap();
     let _result = handle.play_raw(player.convert_samples());
 

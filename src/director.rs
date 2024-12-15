@@ -1,15 +1,14 @@
 use crate::voice::Voice;
 use crate::phonemes::Phonemes;
 use crate::syllable::Syllable;
+use crate::VoicePart;
 use std::sync::mpsc;
 
 pub enum Message {
     NoteOn {syllable: String, note_index: i32, velocity: f32},
     NoteOff,
     SetVolume {volume: f32},
-    SetPitchBend {semitones: f32},
-    SetRd {rd: f32},
-    SetNoise {noise: f32}
+    SetPitchBend {semitones: f32}
 }
 
 struct Transition {
@@ -33,6 +32,9 @@ struct Note {
 
 pub struct Director {
     voices: Vec<Voice>,
+    voice_part: VoicePart,
+    lowest_note: i32,
+    highest_note: i32,
     phonemes: Phonemes,
     step: i64,
     transitions: Vec<Transition>,
@@ -50,10 +52,42 @@ pub struct Director {
 }
 
 impl Director {
-    pub fn new(voices: Vec<Voice>, message_receiver: mpsc::Receiver<Message>) -> Self {
+    pub fn new(voice_part: VoicePart, voice_count: i32, message_receiver: mpsc::Receiver<Message>) -> Self {
+        let mut voices = vec![];
+        for i in 0..voice_count {
+            voices.push(Voice::new(voice_part, 48000));
+        }
+        let mut vocal_length;
+        let mut lowest_note;
+        let mut highest_note;
+        match voice_part {
+            VoicePart::Soprano => {
+                vocal_length = 42;
+                lowest_note = 57;
+                highest_note = 88;
+            }
+            VoicePart::Alto => {
+                vocal_length = 44;
+                lowest_note = 48;
+                highest_note = 79;
+            }
+            VoicePart::Tenor => {
+                vocal_length = 46;
+                lowest_note = 45;
+                highest_note = 72;
+            }
+            VoicePart::Bass => {
+                vocal_length = 48;
+                lowest_note = 36;
+                highest_note = 67;
+            }
+        }
         Self {
             voices: voices,
-            phonemes: Phonemes::new(),
+            voice_part: voice_part.clone(),
+            lowest_note: lowest_note,
+            highest_note: highest_note,
+            phonemes: Phonemes::new(voice_part),
             step: 0,
             transitions: vec![],
             current_note: None,
@@ -62,7 +96,7 @@ impl Director {
             frequency: 1.0,
             bend: 1.0,
             off_after_step: 0,
-            shape_after_transitions: vec![0.0; 44],
+            shape_after_transitions: vec![0.0; vocal_length],
             nasal_coupling_after_transitions: 0.0,
             envelope_after_transitions: 0.0,
             frequency_after_transitions: 0.0,
@@ -71,6 +105,12 @@ impl Director {
     }
 
     fn note_on(&mut self, syllable: &str, note_index: i32, velocity: f32) -> Result<(), &'static str> {
+        if note_index < self.lowest_note || note_index > self.highest_note {
+            if self.current_note.is_some() {
+                self.note_off();
+            }
+            return Ok(());
+        }
         let new_syllable = Syllable::build(syllable)?;
         let frequency = 440.0 * f32::powf(2.0, (note_index-69) as f32/12.0);
         let mut delay = 0;
@@ -82,8 +122,11 @@ impl Director {
             for c in &note.syllable.final_vowels.clone() {
                 delay = self.add_transient_vowel(delay, *c);
             }
-            let transition_time = 1100 + 270*(current_note_index-note_index).abs();
-            self.add_transition(delay, transition_time as i64, TransitionData::FrequencyChange {start_frequency: self.frequency_after_transitions, end_frequency: frequency});
+            let transition_time = (1100 + 270*(current_note_index-note_index).abs()) as i64;
+            self.add_transition(delay, transition_time, TransitionData::FrequencyChange {start_frequency: self.frequency_after_transitions, end_frequency: frequency});
+            let min_envelope = f32::powf(0.9, (current_note_index-note_index).abs() as f32);
+            self.add_transition(delay, transition_time/2, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: min_envelope});
+            self.add_transition(delay+transition_time/2, transition_time/2, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: 1.0});
         }
         else {
             self.add_transition(delay, 0, TransitionData::FrequencyChange {start_frequency: frequency, end_frequency: frequency});
@@ -108,6 +151,7 @@ impl Director {
             velocity: velocity
         };
         self.current_note = Some(note);
+        self.update_sound();
         Ok(())
     }
 
@@ -160,7 +204,7 @@ impl Director {
             self.update_transitions();
         }
         self.step += 1;
-        if self.volume > 0.0 && self.envelope > 0.0 {
+        if self.envelope > 0.0 {
             self.off_after_step = self.step+500;
         }
         if self.step >= self.off_after_step {
@@ -187,20 +231,11 @@ impl Director {
                         Message::SetVolume {volume} => {
                             self.volume = volume;
                             self.update_volume();
+                            self.update_sound();
                         }
                         Message::SetPitchBend {semitones} => {
                             self.bend = f32::powf(2.0, semitones as f32/12.0);
                             self.update_frequency();
-                        }
-                        Message::SetRd {rd} => {
-                            for voice in &mut self.voices {
-                                voice.set_rd(rd);
-                            }
-                        }
-                        Message::SetNoise {noise} => {
-                            for voice in &mut self.voices {
-                                voice.set_noise(noise);
-                            }
                         }
                     }
                 }
@@ -244,14 +279,29 @@ impl Director {
     }
 
     fn update_volume(&mut self) {
+        let actual_volume = 0.1+0.9*self.volume;
         for voice in &mut self.voices {
-            voice.set_volume(self.volume*self.envelope);
+            voice.set_volume(actual_volume*self.envelope);
         }
     }
 
     fn update_frequency(&mut self) {
         for voice in &mut self.voices {
             voice.set_frequency(self.frequency*self.bend);
+        }
+    }
+
+    fn update_sound(&mut self) {
+        let noise = 0.03*(1.0-self.volume)*(1.0-self.volume);
+        for voice in &mut self.voices {
+            voice.set_noise(noise);
+        }
+        if let Some(note) = &self.current_note {
+            let x = (self.highest_note-note.note_index) as f32 / (self.highest_note-self.lowest_note) as f32;
+            let rd = 1.4 + 0.4*x + 0.2*self.volume;
+            for voice in &mut self.voices {
+                voice.set_rd(rd);
+            }
         }
     }
 }

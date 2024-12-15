@@ -1,6 +1,7 @@
 use std::f32::consts::PI;
 use crate::random::Random;
 use crate::filter::LowpassFilter;
+use crate::VoicePart;
 
 pub struct Glottis {
     pub frequency: f32,
@@ -41,7 +42,7 @@ impl Glottis {
             frequency_drift_amplitude: 0.003,
             volume_drift_amplitude: 0.1,
             vibrato_frequency: 5.0,
-            vibrato_amplitude: 0.01,
+            vibrato_amplitude: 0.02,
             vibrato_frequency_drift_amplitude: 0.05,
             vibrato_amplitude_drift_amplitude: 0.2,
             sample_rate: sample_rate,
@@ -170,17 +171,43 @@ pub struct Voice {
 }
 
 impl Voice {
-    pub fn new(sample_rate: i32) -> Self {
+    pub fn new(voice_part: VoicePart, sample_rate: i32) -> Self {
+        let mut vocal_length;
+        let mut coupling_position;
+        let mut vibrato_frequency;
+        match voice_part {
+            VoicePart::Soprano => {
+                vocal_length = 42;
+                coupling_position = 19;
+                vibrato_frequency = 6.3;
+            }
+            VoicePart::Alto => {
+                vocal_length = 44;
+                coupling_position = 20;
+                vibrato_frequency = 5.3;
+            }
+            VoicePart::Tenor => {
+                vocal_length = 46;
+                coupling_position = 21;
+                vibrato_frequency = 5.3;
+            }
+            VoicePart::Bass => {
+                vocal_length = 48;
+                coupling_position = 22;
+                vibrato_frequency = 5.2;
+            }
+        }
         let mut voice = Voice {
             glottis: Glottis::new(sample_rate),
-            vocal: Waveguide::new(44),
+            vocal: Waveguide::new(vocal_length),
             nasal: Waveguide::new(28),
             volume: 1.0,
             nasal_coupling: 0.0,
-            coupling_position: 20,
+            coupling_position: coupling_position,
             nasal_off_after_step: 0
         };
         voice.nasal.set_shape(&vec![1.52, 1.67, 1.86, 2.35, 2.92, 3.46, 4.16, 4.41, 4.01, 3.24, 3.22, 3.26, 3.17, 2.81, 2.65, 2.56, 2.5, 2.34, 1.94, 1.43, 1.05, 1.41, 1.71, 1.6, 1.48, 1.54, 1.23, 0.885]);
+        voice.glottis.vibrato_frequency = vibrato_frequency;
         voice
     }
 
