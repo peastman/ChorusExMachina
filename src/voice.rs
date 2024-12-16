@@ -172,9 +172,9 @@ pub struct Voice {
 
 impl Voice {
     pub fn new(voice_part: VoicePart, sample_rate: i32) -> Self {
-        let mut vocal_length;
-        let mut coupling_position;
-        let mut vibrato_frequency;
+        let vocal_length;
+        let coupling_position;
+        let vibrato_frequency;
         match voice_part {
             VoicePart::Soprano => {
                 vocal_length = 42;

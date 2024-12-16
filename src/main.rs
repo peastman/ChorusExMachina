@@ -5,7 +5,6 @@ use chorus::VoicePart;
 use rodio::{OutputStream, Source};
 use midir::MidiInput;
 use std::sync::{mpsc, Arc, Mutex};
-use std::thread::sleep;
 use std::time::Duration;
 
 use eframe::egui::{self, CentralPanel};
@@ -50,26 +49,25 @@ struct MidiController {
 fn process_midi_message(timestamp: u64, message: &[u8], data: &mut Arc<Mutex<MidiController>>) {
     let mut controller = data.lock().unwrap();
     if message[0] == 144 {
-        controller.sender.send(Message::NoteOn {syllable: controller.syllable.clone(), note_index: message[1] as i32, velocity: message[2] as f32 / 127.0});
+        let _ = controller.sender.send(Message::NoteOn {syllable: controller.syllable.clone(), note_index: message[1] as i32, velocity: message[2] as f32 / 127.0});
         controller.last_note = message[1];
     }
     else if message[0] == 128 && controller.last_note == message[1] {
-        controller.sender.send(Message::NoteOff);
+        let _ = controller.sender.send(Message::NoteOff);
     }
     else if message[0] == 176 && message[1] == 1 {
-        controller.sender.send(Message::SetVolume {volume: message[2] as f32 / 127.0});
+        let _ = controller.sender.send(Message::SetVolume {volume: message[2] as f32 / 127.0});
     }
     else if message[0] == 224 {
         let value = message[2] as f32 + message[1] as f32 / 128.0;
-        controller.sender.send(Message::SetPitchBend {semitones: (value-64.0)/32.0});
+        let _ = controller.sender.send(Message::SetPitchBend {semitones: (value-64.0)/32.0});
     }
 }
 
 struct MainGui {
     controller_ref: Arc<Mutex<MidiController>>,
     rd: f32,
-    noise: f32,
-    syllable: String
+    noise: f32
 }
 
 impl App for MainGui {
@@ -86,13 +84,13 @@ impl App for MainGui {
 
 fn main() -> Result<(), eframe::Error> {
     let (sender, receiver) = mpsc::channel();
-    let mut player = Player { director: Director::new(VoicePart::Alto, 1, receiver) };
+    let mut player = Player { director: Director::new(VoicePart::Soprano, 1, receiver) };
     let (_stream, handle) = OutputStream::try_default().unwrap();
     let _result = handle.play_raw(player.convert_samples());
 
-    let mut midi_in = MidiInput::new("Chorus").unwrap();
+    let midi_in = MidiInput::new("Chorus").unwrap();
     let in_ports = midi_in.ports();
-    let in_port = &in_ports[0];
+    let in_port = &in_ports[1];
     let controller = Arc::new(Mutex::new(MidiController {sender: sender.clone(), last_note: 255, syllable: "A".to_string()}));
     let _conn_in = midi_in.connect(
         in_port,
@@ -104,8 +102,7 @@ fn main() -> Result<(), eframe::Error> {
     let gui = MainGui {
         controller_ref: Arc::clone(&controller),
         rd: 2.0,
-        noise: 0.01,
-        syllable: "A".to_string()
+        noise: 0.01
     };
     eframe::run_native(
         "Chorus",
