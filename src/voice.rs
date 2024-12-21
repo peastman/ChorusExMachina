@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 use crate::random::Random;
-use crate::filter::LowpassFilter;
+use crate::filter::{Filter, LowpassFilter};
 use crate::VoicePart;
 
 pub struct Glottis {
@@ -148,7 +148,7 @@ impl Waveguide {
         let n = self.k.len();
         for i in 0..n-1 {
             if self.area[i+1] == 0.0 {
-                self.k[i] = 1.0;
+                self.k[i] = 0.98;
                 self.right[i] = 0.0;
                 self.left[i] = 0.0;
             }
@@ -232,7 +232,9 @@ impl Voice {
         self.glottis.noise = noise;
     }
 
-    pub fn generate(&mut self, step: i64) -> f32 {
+    pub fn generate(&mut self, step: i64, noise: f32, noise_position: usize) -> f32 {
+        self.vocal.right[noise_position] += noise;
+        self.vocal.left[noise_position] += noise;
         let excitation = self.volume*self.glottis.generate(step);
         let n = self.vocal.right.len();
         let nasal_n = self.nasal.right.len();

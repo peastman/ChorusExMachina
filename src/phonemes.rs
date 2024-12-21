@@ -1,16 +1,17 @@
+use crate::filter::ResonantFilter;
 use crate::VoicePart;
 use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
 
 pub struct Phonemes {
     shape_map: HashMap<char, Vec<f32>>,
     nasal_vowels: HashSet<char>,
-    consonant_map: HashMap<char, Arc<Vec<i16>>>
+    consonant_map: HashMap<char, Consonant>
 }
 
 impl Phonemes {
     pub fn new(voice_part: VoicePart) -> Self {
         let mut shape_map = HashMap::new();
+        let mut consonant_map = HashMap::new();
         match voice_part {
             VoicePart::Soprano => {
                 shape_map.insert('&', vec![0.801, 0.753, 0.633, 0.521, 0.433, 0.445, 2.42, 4.86, 5.7, 5.45, 4.88, 4.29, 4.4, 4.8, 4.91, 4.87, 4.86, 4.93, 5.25, 5.91, 6.88, 7.12, 5.8, 5.45, 4.8, 3.9, 3.28, 2.6, 2.19, 2.39, 2.87, 3.13, 3.43, 3.51, 3.34, 2.82, 2.32, 1.82, 1.29, 0.799, 1.33, 1.99]);
@@ -111,19 +112,24 @@ impl Phonemes {
                 shape_map.insert('u', vec![0.801, 0.753, 0.639, 0.526, 0.44, 0.45, 2.58, 5.55, 6.53, 6.82, 6.42, 6.1, 5.97, 6.61, 7.13, 7.33, 7.25, 6.7, 5.76, 4.94, 4.41, 4.28, 4.35, 3.69, 2.3, 1.9, 1.33, 0.835, 0.531, 0.439, 0.44, 0.73, 1.46, 2.29, 3.0, 3.55, 3.94, 4.11, 3.95, 5.31, 8.71, 7.57, 3.63, 1.62, 1.07, 0.435, 0.305, 0.302]);
                 shape_map.insert('y', vec![0.801, 0.754, 0.65, 0.548, 0.461, 0.392, 0.668, 2.81, 4.37, 5.04, 4.88, 4.44, 4.11, 4.05, 4.66, 5.63, 6.27, 6.86, 7.42, 7.96, 8.62, 8.97, 8.16, 7.37, 7.13, 6.02, 4.74, 3.53, 2.31, 1.24, 0.736, 0.546, 0.502, 0.534, 0.688, 0.745, 0.805, 0.77, 0.775, 0.924, 1.15, 1.31, 1.53, 1.47, 1.26, 0.527, 0.314, 0.293]);
                 shape_map.insert('{', vec![0.22, 0.245, 0.263, 0.229, 0.177, 0.159, 0.27, 0.611, 1.19, 1.45, 1.24, 0.965, 0.957, 1.4, 2.14, 2.57, 2.48, 2.62, 3.23, 3.94, 4.61, 5.16, 5.52, 5.62, 5.79, 5.66, 5.16, 4.75, 4.57, 4.48, 4.31, 4.1, 3.94, 3.85, 3.9, 3.91, 3.94, 4.09, 4.33, 4.59, 4.77, 4.7, 4.43, 4.18, 4.02, 3.91, 3.74, 3.37]);
+                consonant_map.insert('b', Consonant {sampa: 'b', start: 0, delay: 100, transition_time: 2000, on_time: 0, off_time: 1500, volume: 0.005, position: 43, filter: ResonantFilter::new(48000, 2200.0, 2500.0)});
+                consonant_map.insert('d', Consonant {sampa: 'd', start: 0, delay: 800, transition_time: 3500, on_time: 100, off_time: 750, volume: 0.01, position: 38, filter: ResonantFilter::new(48000, 1300.0, 1500.0)});
+                consonant_map.insert('g', Consonant {sampa: 'g', start: 0, delay: 1500, transition_time: 2500, on_time: 100, off_time: 600, volume: 0.005, position: 30, filter: ResonantFilter::new(48000, 1025.0, 200.0)});
+                consonant_map.insert('k', Consonant {sampa: 'k', start: 0, delay: 2000, transition_time: 2500, on_time: 700, off_time: 500, volume: 0.01, position: 33, filter: ResonantFilter::new(48000, 1500.0, 3000.0)});
+                consonant_map.insert('p', Consonant {sampa: 'p', start: 0, delay: 1200, transition_time: 500, on_time: 0, off_time: 2900, volume: 0.01, position: 44, filter: ResonantFilter::new(48000, 700.0, 4300.0)});
+                consonant_map.insert('t', Consonant {sampa: 't', start: 0, delay: 1000, transition_time: 3500, on_time: 800, off_time: 1800, volume: 0.006, position: 42, filter: ResonantFilter::new(48000, 3400.0, 5000.0)});
             }
         }
+        shape_map.insert('b', shape_map.get(&'m').unwrap().clone());
         shape_map.insert('d', shape_map.get(&'l').unwrap().clone());
+        shape_map.insert('g', shape_map.get(&'N').unwrap().clone());
         shape_map.insert('k', shape_map.get(&'N').unwrap().clone());
+        shape_map.insert('p', shape_map.get(&'m').unwrap().clone());
         shape_map.insert('t', shape_map.get(&'l').unwrap().clone());
         let mut nasal_vowels = HashSet::new();
         nasal_vowels.insert('m');
         nasal_vowels.insert('n');
         nasal_vowels.insert('N');
-        let mut consonant_map = HashMap::new();
-        consonant_map.insert('d', load_consonant("consonants/d.flac"));
-        consonant_map.insert('k', load_consonant("consonants/k.flac"));
-        consonant_map.insert('t', load_consonant("consonants/t.flac"));
         Self { shape_map: shape_map, nasal_vowels: nasal_vowels, consonant_map: consonant_map }
     }
 
@@ -138,22 +144,39 @@ impl Phonemes {
         0.0
     }
 
-    pub fn get_consonant_samples(&self, consonant: char) -> Option<Arc<Vec<i16>>> {
-        if let Some(samples) = self.consonant_map.get(&consonant) {
-            return Some(Arc::clone(samples));
+    pub fn get_consonant(&self, consonant: char) -> Option<Consonant> {
+        match self.consonant_map.get(&consonant) {
+            Some(c) => Some(*c),
+            None => None
         }
-        None
+    }
+
+    pub fn get_consonant_shape(&self, consonant: &Consonant, adjacent_vowel: char) -> Option<Vec<f32>> {
+        let mut shape = self.shape_map.get(&adjacent_vowel)?.clone();
+        if consonant.sampa == 'b' {
+            shape = self.shape_map.get(&'o')?.clone();
+        }
+        if consonant.position > shape.len()/2 {
+            for i in 0..9 {
+                shape[consonant.position-i] *= (i+1) as f32 * 0.1;
+            }
+            if consonant.position < shape.len()-2 {
+                shape[consonant.position+1] *= 0.5;
+            }
+        }
+        Some(shape)
     }
 }
 
-fn load_consonant(filename: &str) -> Arc<Vec<i16>> {
-    let mut reader = claxon::FlacReader::open(filename).unwrap();
-    assert_eq!(48000, reader.streaminfo().sample_rate);
-    assert_eq!(1, reader.streaminfo().channels);
-    assert_eq!(16, reader.streaminfo().bits_per_sample);
-    let mut samples = Vec::new();
-    for sample in reader.samples() {
-        samples.push(sample.unwrap() as i16);
-    }
-    Arc::new(samples)
+#[derive(Copy, Clone)]
+pub struct Consonant {
+    pub sampa: char,
+    pub start: i64,
+    pub delay: i64,
+    pub transition_time: i64,
+    pub on_time: i64,
+    pub off_time: i64,
+    pub volume: f32,
+    pub position: usize,
+    pub filter: ResonantFilter
 }

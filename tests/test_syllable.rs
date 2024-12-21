@@ -15,7 +15,7 @@ fn should_pass() {
     let specs = vec!["a", "i", "ked", "Adk", "kdIkd", "Ai", "aim", "dui", "iu", "uio", "u-io", "uio-"];
     let expected_initial_consonants = vec!["", "", "k", "", "kd", "", "", "d", "", "", "", ""];
     let expected_initial_vowels = vec!["", "", "", "", "", "", "a", "u", "i", "u", "", "ui"];
-    let expected_main_vowel = vec!["a", "i", "e", "A", "I", "A", "i", "i", "u", "i", "u", "o"];
+    let expected_main_vowel = vec!['a', 'i', 'e', 'A', 'I', 'A', 'i', 'i', 'u', 'i', 'u', 'o'];
     let expected_final_vowels = vec!["", "", "", "", "", "i", "m", "", "", "o", "io", ""];
     let expected_final_consonants = vec!["", "", "d", "dk", "kd", "", "", "", "", "", "", ""];
     for i in 0..specs.len() {
@@ -24,5 +24,6 @@ fn should_pass() {
         assert_eq!(expected_final_consonants[i].chars().collect::<Vec<char>>(), syllable.final_consonants);
         assert_eq!(expected_initial_vowels[i].chars().collect::<Vec<char>>(), syllable.initial_vowels);
         assert_eq!(expected_final_vowels[i].chars().collect::<Vec<char>>(), syllable.final_vowels);
+        assert_eq!(expected_main_vowel[i], syllable.main_vowel);
     }
 }

@@ -2,8 +2,8 @@ pub mod voice;
 pub mod phonemes;
 pub mod director;
 pub mod syllable;
-mod random;
-mod filter;
+pub mod random;
+pub mod filter;
 
 #[derive(Copy, Clone)]
 pub enum VoicePart {

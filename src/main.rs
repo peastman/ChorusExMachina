@@ -1,6 +1,6 @@
-use chorus::phonemes::Phonemes;
 use chorus::director::{Director, Message};
 use chorus::VoicePart;
+use chorus::phonemes::Phonemes;
 
 use rodio::{OutputStream, Source};
 use midir::MidiInput;
@@ -66,8 +66,16 @@ fn process_midi_message(timestamp: u64, message: &[u8], data: &mut Arc<Mutex<Mid
 
 struct MainGui {
     controller_ref: Arc<Mutex<MidiController>>,
-    rd: f32,
-    noise: f32
+    vowel_delay: i64,
+    vowel_transition_time: i64,
+    consonant_delay: i64,
+    consonant_transition_time: i64,
+    consonant_on_time: i64,
+    consonant_off_time: i64,
+    consonant_volume: f32,
+    consonant_position: usize,
+    consonant_frequency: f32,
+    consonant_bandwidth: f32
 }
 
 impl App for MainGui {
@@ -76,15 +84,81 @@ impl App for MainGui {
         CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("Syllable");
-                ui.text_edit_singleline(&mut controller.syllable);
+                let response = ui.text_edit_singleline(&mut controller.syllable);
+                if response.changed() {
+                    if controller.syllable.len() > 0 {
+                        let phonemes = Phonemes::new(VoicePart::Bass);
+                        let cons = controller.syllable.chars().next().unwrap();
+                        if let Some(c) = phonemes.get_consonant(cons) {
+                            self.consonant_delay = c.delay;
+                            self.vowel_transition_time = c.transition_time;
+                            self.consonant_on_time = c.on_time;
+                            self.consonant_off_time = c.off_time;
+                            self.consonant_volume = c.volume;
+                            self.consonant_position = c.position;
+                            if cons == 'b' {
+                                self.consonant_frequency = 2200.0;
+                                self.consonant_bandwidth = 2500.0;
+                            }
+                            if cons == 'd' {
+                                self.consonant_frequency = 1300.0;
+                                self.consonant_bandwidth = 1500.0;
+                            }
+                            if cons == 'g' {
+                                self.consonant_frequency = 1025.0;
+                                self.consonant_bandwidth = 200.0;
+                            }
+                            if cons == 'k' {
+                                self.consonant_frequency = 1500.0;
+                                self.consonant_bandwidth = 3000.0;
+                            }
+                            if cons == 'p' {
+                                self.consonant_frequency = 700.0;
+                                self.consonant_bandwidth = 4300.0;
+                            }
+                            if cons == 't' {
+                                self.consonant_frequency = 2000.0;
+                                self.consonant_bandwidth = 3000.0;
+                            }
+                            let _ = controller.sender.send(Message::SetConsonants {on_time: self.consonant_on_time, off_time: self.consonant_off_time, volume: self.consonant_volume, position: self.consonant_position, frequency: self.consonant_frequency, bandwidth: self.consonant_bandwidth});
+                        }
+                    }
+                }
             });
+            if ui.add(egui::Slider::new(&mut self.vowel_delay, 0..=10000).text("Vowel Delay")).dragged() {
+                let _ = controller.sender.send(Message::SetDelays {vowel_delay: self.vowel_delay, vowel_transition_time: self.vowel_transition_time, consonant_delay: self.consonant_delay, consonant_transition_time: self.consonant_transition_time});
+            }
+            if ui.add(egui::Slider::new(&mut self.consonant_delay, 0..=10000).text("Consonant Delay")).dragged() {
+                let _ = controller.sender.send(Message::SetDelays {vowel_delay: self.vowel_delay, vowel_transition_time: self.vowel_transition_time, consonant_delay: self.consonant_delay, consonant_transition_time: self.consonant_transition_time});
+            }
+            if ui.add(egui::Slider::new(&mut self.vowel_transition_time, 0..=10000).text("Vowel Transition Time")).dragged() {
+                let _ = controller.sender.send(Message::SetDelays {vowel_delay: self.vowel_delay, vowel_transition_time: self.vowel_transition_time, consonant_delay: self.consonant_delay, consonant_transition_time: self.consonant_transition_time});
+            }
+            if ui.add(egui::Slider::new(&mut self.consonant_on_time, 0..=2000).text("Consonant On Time")).dragged() {
+                let _ = controller.sender.send(Message::SetConsonants {on_time: self.consonant_on_time, off_time: self.consonant_off_time, volume: self.consonant_volume, position: self.consonant_position, frequency: self.consonant_frequency, bandwidth: self.consonant_bandwidth});
+            }
+            if ui.add(egui::Slider::new(&mut self.consonant_off_time, 0..=4000).text("Consonant Off Time")).dragged() {
+                let _ = controller.sender.send(Message::SetConsonants {on_time: self.consonant_on_time, off_time: self.consonant_off_time, volume: self.consonant_volume, position: self.consonant_position, frequency: self.consonant_frequency, bandwidth: self.consonant_bandwidth});
+            }
+            if ui.add(egui::Slider::new(&mut self.consonant_volume, 0.0..=0.1).text("Consonant Volume")).dragged() {
+                let _ = controller.sender.send(Message::SetConsonants {on_time: self.consonant_on_time, off_time: self.consonant_off_time, volume: self.consonant_volume, position: self.consonant_position, frequency: self.consonant_frequency, bandwidth: self.consonant_bandwidth});
+            }
+            if ui.add(egui::Slider::new(&mut self.consonant_position, 0..=46).text("Consonant Position")).dragged() {
+                let _ = controller.sender.send(Message::SetConsonants {on_time: self.consonant_on_time, off_time: self.consonant_off_time, volume: self.consonant_volume, position: self.consonant_position, frequency: self.consonant_frequency, bandwidth: self.consonant_bandwidth});
+            }
+            if ui.add(egui::Slider::new(&mut self.consonant_frequency, 100.0..=5000.0).text("Consonant Frequency")).dragged() {
+                let _ = controller.sender.send(Message::SetConsonants {on_time: self.consonant_on_time, off_time: self.consonant_off_time, volume: self.consonant_volume, position: self.consonant_position, frequency: self.consonant_frequency, bandwidth: self.consonant_bandwidth});
+            }
+            if ui.add(egui::Slider::new(&mut self.consonant_bandwidth, 100.0..=5000.0).text("Consonant Bandwidth")).dragged() {
+                let _ = controller.sender.send(Message::SetConsonants {on_time: self.consonant_on_time, off_time: self.consonant_off_time, volume: self.consonant_volume, position: self.consonant_position, frequency: self.consonant_frequency, bandwidth: self.consonant_bandwidth});
+            }
         });
     }
 }
 
 fn main() -> Result<(), eframe::Error> {
     let (sender, receiver) = mpsc::channel();
-    let mut player = Player { director: Director::new(VoicePart::Soprano, 1, receiver) };
+    let player = Player { director: Director::new(VoicePart::Bass, 1, receiver) };
     let (_stream, handle) = OutputStream::try_default().unwrap();
     let _result = handle.play_raw(player.convert_samples());
 
@@ -101,9 +175,17 @@ fn main() -> Result<(), eframe::Error> {
     let options = NativeOptions::default();
     let gui = MainGui {
         controller_ref: Arc::clone(&controller),
-        rd: 2.0,
-        noise: 0.01
-    };
+        vowel_delay: 0,
+        vowel_transition_time: 2000,
+        consonant_delay: 3000,
+        consonant_transition_time: 1000,
+        consonant_on_time: 1000,
+        consonant_off_time: 1000,
+        consonant_volume: 0.1,
+        consonant_position: 40,
+        consonant_frequency: 2000.0,
+        consonant_bandwidth: 3000.0
+};
     eframe::run_native(
         "Chorus",
         options,

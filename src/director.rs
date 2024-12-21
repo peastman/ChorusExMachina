@@ -1,5 +1,7 @@
 use crate::voice::Voice;
-use crate::phonemes::Phonemes;
+use crate::filter::{Filter, ResonantFilter};
+use crate::phonemes::{Consonant, Phonemes};
+use crate::random::Random;
 use crate::syllable::Syllable;
 use crate::VoicePart;
 use std::sync::{Arc, mpsc};
@@ -8,7 +10,9 @@ pub enum Message {
     NoteOn {syllable: String, note_index: i32, velocity: f32},
     NoteOff,
     SetVolume {volume: f32},
-    SetPitchBend {semitones: f32}
+    SetPitchBend {semitones: f32},
+    SetDelays {vowel_delay: i64, vowel_transition_time: i64, consonant_delay: i64, consonant_transition_time: i64},
+    SetConsonants {on_time: i64, off_time: i64, volume: f32, position: usize, frequency: f32, bandwidth: f32}
 }
 
 struct Transition {
@@ -30,18 +34,13 @@ struct Note {
     velocity: f32
 }
 
-struct Consonant {
-    start: i64,
-    end: i64,
-    samples: Arc<Vec<i16>>
-}
-
 pub struct Director {
     voices: Vec<Voice>,
     voice_part: VoicePart,
     lowest_note: i32,
     highest_note: i32,
     phonemes: Phonemes,
+    random: Random,
     step: i64,
     transitions: Vec<Transition>,
     current_note: Option<Note>,
@@ -55,7 +54,17 @@ pub struct Director {
     nasal_coupling_after_transitions: f32,
     envelope_after_transitions: f32,
     frequency_after_transitions: f32,
-    message_receiver: mpsc::Receiver<Message>
+    message_receiver: mpsc::Receiver<Message>,
+    vowel_delay: i64,
+    vowel_transition_time: i64,
+    consonant_delay: i64,
+    consonant_transition_time: i64,
+    consonant_on_time: i64,
+    consonant_off_time: i64,
+    consonant_volume: f32,
+    consonant_position: usize,
+    consonant_frequency: f32,
+    consonant_bandwidth: f32
 }
 
 impl Director {
@@ -95,6 +104,7 @@ impl Director {
             lowest_note: lowest_note,
             highest_note: highest_note,
             phonemes: Phonemes::new(voice_part),
+            random: Random::new(),
             step: 0,
             transitions: vec![],
             current_note: None,
@@ -108,7 +118,17 @@ impl Director {
             nasal_coupling_after_transitions: 0.0,
             envelope_after_transitions: 0.0,
             frequency_after_transitions: 0.0,
-            message_receiver: message_receiver
+            message_receiver: message_receiver,
+            vowel_delay: 0,
+            vowel_transition_time: 2000,
+            consonant_delay: 3000,
+            consonant_transition_time: 0,
+            consonant_on_time: 1000,
+            consonant_off_time: 1000,
+            consonant_volume: 0.1,
+            consonant_position: 40,
+            consonant_frequency: 2000.0,
+            consonant_bandwidth: 3000.0
         }
     }
 
@@ -194,9 +214,12 @@ impl Director {
 
         let shape = self.phonemes.get_vowel_shape(new_syllable.main_vowel).unwrap();
         let nasal_coupling = self.phonemes.get_nasal_coupling(new_syllable.main_vowel);
-        let transition_time = if self.current_note.is_some() || new_syllable.initial_vowels.len() > 0 || consonants.len() > 0 {2000} else {0};
-        let start_shape = match consonants.last() {
-            Some(c) => self.phonemes.get_vowel_shape(*c).unwrap().clone(),
+        let transition_time = if self.current_note.is_some() || new_syllable.initial_vowels.len() > 0 || consonants.len() > 0 {self.vowel_transition_time} else {0};
+        let start_shape = match self.consonants.last() {
+            Some(c) => {
+                let consonant_shape = self.phonemes.get_consonant_shape(c, new_syllable.main_vowel);
+                if consonant_shape.is_some() {consonant_shape.unwrap().clone()} else {self.shape_after_transitions.clone()}
+            },
             None => self.shape_after_transitions.clone()
         };
         self.add_transition(delay, transition_time, TransitionData::ShapeChange {
@@ -237,12 +260,15 @@ impl Director {
             }
         }
         if consonants.len() > 0 {
-            self.add_transition(delay, 3000, TransitionData::ShapeChange {
-                start_shape: self.shape_after_transitions.clone(),
-                end_shape: self.phonemes.get_vowel_shape(*consonants.last().unwrap()).unwrap().clone(),
-                start_nasal_coupling: self.nasal_coupling_after_transitions,
-                end_nasal_coupling: 0.0
-            });
+            let consonant_shape = self.phonemes.get_vowel_shape(*consonants.last().unwrap());
+            if consonant_shape.is_some() {
+                self.add_transition(delay, 3000, TransitionData::ShapeChange {
+                    start_shape: self.shape_after_transitions.clone(),
+                    end_shape: consonant_shape.unwrap().clone(),
+                    start_nasal_coupling: self.nasal_coupling_after_transitions,
+                    end_nasal_coupling: 0.0
+                });
+            }
             for c in &consonants {
                 delay = self.add_consonant(delay, *c);
             }
@@ -253,21 +279,32 @@ impl Director {
     fn add_transient_vowel(&mut self, delay: i64, c: char) -> i64 {
         let shape = self.phonemes.get_vowel_shape(c).unwrap();
         let nasal_coupling = self.phonemes.get_nasal_coupling(c);
-        self.add_transition(delay, 2000, TransitionData::ShapeChange {
+        self.add_transition(delay, self.vowel_transition_time, TransitionData::ShapeChange {
             start_shape: self.shape_after_transitions.clone(),
             end_shape: shape.clone(),
             start_nasal_coupling: self.nasal_coupling_after_transitions,
             end_nasal_coupling: nasal_coupling
         });
-        delay+2000
+        delay+self.vowel_delay+self.vowel_transition_time
     }
 
     fn add_consonant(&mut self, delay: i64, c: char) -> i64 {
-        let samples = self.phonemes.get_consonant_samples(c).unwrap();
-        let duration = samples.len() as i64;
-        let consonant = Consonant {start: self.step+delay, end: self.step+delay+duration, samples: samples };
+        // let mut consonant = Consonant {
+        //     sampa: c,
+        //     start: self.step+delay,
+        //     delay: self.consonant_delay,
+        //     transition_time: self.vowel_transition_time,
+        //     on_time: self.consonant_on_time,
+        //     off_time: self.consonant_off_time,
+        //     volume: self.consonant_volume,
+        //     position: self.consonant_position,
+        //     filter: ResonantFilter::new(48000, self.consonant_frequency, self.consonant_bandwidth)
+        // };
+        let mut consonant = self.phonemes.get_consonant(c).unwrap();
+        consonant.start = self.step+delay;
+        let delay = delay+consonant.delay;
         self.consonants.push(consonant);
-        delay+3000
+        delay
     }
 
     fn add_transition(&mut self, delay: i64, duration: i64, data: TransitionData) {
@@ -291,26 +328,41 @@ impl Director {
         if self.step%200 == 0 {
             self.process_messages();
             self.update_transitions();
-            self.consonants.retain(|t| self.step < t.end);
         }
         self.step += 1;
         if self.envelope > 0.0 {
             self.off_after_step = self.step+500;
         }
+
+        let mut consonant_noise = 0.0;
+        let mut consonant_position = 0;
+        if self.consonants.len() > 0 {
+            let consonant = &mut self.consonants[0];
+            let i = self.step-consonant.start;
+            if i > 0 {
+                consonant_position = consonant.position;
+                if i < consonant.on_time {
+                    let volume = consonant.volume*(i as f32 / consonant.on_time as f32);
+                    consonant_noise = volume*consonant.filter.process(self.random.get_normal());
+                }
+                else if i < consonant.on_time+consonant.off_time {
+                    let j = i-consonant.on_time;
+                    let volume = consonant.volume*((consonant.off_time-j) as f32 / consonant.off_time as f32);
+                    consonant_noise = volume*consonant.filter.process(self.random.get_normal());
+                }
+                else {
+                    self.consonants.remove(0);
+                }
+            }
+        }
+
+
         let mut sum = 0.0;
-        if self.step < self.off_after_step {
+        if self.step < self.off_after_step || self.consonants.len() != 0 {
             for voice in &mut self.voices {
-                sum += voice.generate(self.step);
+                sum += voice.generate(self.step, consonant_noise, consonant_position);
             }
         }
-        let mut sample_sum = 0;
-        for consonant in &self.consonants {
-            if self.step >= consonant.start && self.step < consonant.end {
-                let i = (self.step-consonant.start) as usize;
-                sample_sum += consonant.samples[i] as i32;
-            }
-        }
-        sum += 3.0*sample_sum as f32 / 32768.0;
         0.08*sum
     }
 
@@ -333,6 +385,20 @@ impl Director {
                         Message::SetPitchBend {semitones} => {
                             self.bend = f32::powf(2.0, semitones as f32/12.0);
                             self.update_frequency();
+                        }
+                        Message::SetDelays {vowel_delay, vowel_transition_time, consonant_delay, consonant_transition_time} => {
+                            self.vowel_delay = vowel_delay;
+                            self.vowel_transition_time = vowel_transition_time;
+                            self.consonant_delay = consonant_delay;
+                            self.consonant_transition_time = consonant_transition_time;
+                        }
+                        Message::SetConsonants {on_time, off_time, volume, position, frequency, bandwidth} => {
+                            self.consonant_on_time = on_time;
+                            self.consonant_off_time = off_time;
+                            self.consonant_volume = volume;
+                            self.consonant_position = position;
+                            self.consonant_frequency = frequency;
+                            self.consonant_bandwidth = bandwidth;
                         }
                     }
                 }
