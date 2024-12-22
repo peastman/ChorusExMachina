@@ -96,30 +96,6 @@ impl App for MainGui {
                             self.consonant_off_time = c.off_time;
                             self.consonant_volume = c.volume;
                             self.consonant_position = c.position;
-                            if cons == 'b' {
-                                self.consonant_frequency = 2200.0;
-                                self.consonant_bandwidth = 2500.0;
-                            }
-                            if cons == 'd' {
-                                self.consonant_frequency = 1300.0;
-                                self.consonant_bandwidth = 1500.0;
-                            }
-                            if cons == 'g' {
-                                self.consonant_frequency = 1025.0;
-                                self.consonant_bandwidth = 200.0;
-                            }
-                            if cons == 'k' {
-                                self.consonant_frequency = 1500.0;
-                                self.consonant_bandwidth = 3000.0;
-                            }
-                            if cons == 'p' {
-                                self.consonant_frequency = 700.0;
-                                self.consonant_bandwidth = 4300.0;
-                            }
-                            if cons == 't' {
-                                self.consonant_frequency = 2000.0;
-                                self.consonant_bandwidth = 3000.0;
-                            }
                             let _ = controller.sender.send(Message::SetConsonants {on_time: self.consonant_on_time, off_time: self.consonant_off_time, volume: self.consonant_volume, position: self.consonant_position, frequency: self.consonant_frequency, bandwidth: self.consonant_bandwidth});
                         }
                     }
@@ -134,7 +110,7 @@ impl App for MainGui {
             if ui.add(egui::Slider::new(&mut self.vowel_transition_time, 0..=10000).text("Vowel Transition Time")).dragged() {
                 let _ = controller.sender.send(Message::SetDelays {vowel_delay: self.vowel_delay, vowel_transition_time: self.vowel_transition_time, consonant_delay: self.consonant_delay, consonant_transition_time: self.consonant_transition_time});
             }
-            if ui.add(egui::Slider::new(&mut self.consonant_on_time, 0..=2000).text("Consonant On Time")).dragged() {
+            if ui.add(egui::Slider::new(&mut self.consonant_on_time, 0..=4000).text("Consonant On Time")).dragged() {
                 let _ = controller.sender.send(Message::SetConsonants {on_time: self.consonant_on_time, off_time: self.consonant_off_time, volume: self.consonant_volume, position: self.consonant_position, frequency: self.consonant_frequency, bandwidth: self.consonant_bandwidth});
             }
             if ui.add(egui::Slider::new(&mut self.consonant_off_time, 0..=4000).text("Consonant Off Time")).dragged() {

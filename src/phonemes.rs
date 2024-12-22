@@ -5,7 +5,8 @@ use std::collections::{HashMap, HashSet};
 pub struct Phonemes {
     shape_map: HashMap<char, Vec<f32>>,
     nasal_vowels: HashSet<char>,
-    consonant_map: HashMap<char, Consonant>
+    consonant_map: HashMap<char, Consonant>,
+    amplification: HashMap<char, f32>
 }
 
 impl Phonemes {
@@ -114,10 +115,18 @@ impl Phonemes {
                 shape_map.insert('{', vec![0.22, 0.245, 0.263, 0.229, 0.177, 0.159, 0.27, 0.611, 1.19, 1.45, 1.24, 0.965, 0.957, 1.4, 2.14, 2.57, 2.48, 2.62, 3.23, 3.94, 4.61, 5.16, 5.52, 5.62, 5.79, 5.66, 5.16, 4.75, 4.57, 4.48, 4.31, 4.1, 3.94, 3.85, 3.9, 3.91, 3.94, 4.09, 4.33, 4.59, 4.77, 4.7, 4.43, 4.18, 4.02, 3.91, 3.74, 3.37]);
                 consonant_map.insert('b', Consonant {sampa: 'b', start: 0, delay: 100, transition_time: 2000, on_time: 0, off_time: 1500, volume: 0.005, position: 43, filter: ResonantFilter::new(48000, 2200.0, 2500.0)});
                 consonant_map.insert('d', Consonant {sampa: 'd', start: 0, delay: 800, transition_time: 3500, on_time: 100, off_time: 750, volume: 0.01, position: 38, filter: ResonantFilter::new(48000, 1300.0, 1500.0)});
+                consonant_map.insert('f', Consonant {sampa: 'f', start: 0, delay: 2500, transition_time: 4000, on_time: 2000, off_time: 2000, volume: 0.007, position: 44, filter: ResonantFilter::new(48000, 1500.0, 5000.0)});
                 consonant_map.insert('g', Consonant {sampa: 'g', start: 0, delay: 1500, transition_time: 2500, on_time: 100, off_time: 600, volume: 0.005, position: 30, filter: ResonantFilter::new(48000, 1025.0, 200.0)});
+                consonant_map.insert('h', Consonant {sampa: 'h', start: 0, delay: 3000, transition_time: 1000, on_time: 2000, off_time: 4000, volume: 0.002, position: 10, filter: ResonantFilter::new(48000, 1000.0, 5000.0)});
                 consonant_map.insert('k', Consonant {sampa: 'k', start: 0, delay: 2000, transition_time: 2500, on_time: 700, off_time: 500, volume: 0.01, position: 33, filter: ResonantFilter::new(48000, 1500.0, 3000.0)});
                 consonant_map.insert('p', Consonant {sampa: 'p', start: 0, delay: 1200, transition_time: 500, on_time: 0, off_time: 2900, volume: 0.01, position: 44, filter: ResonantFilter::new(48000, 700.0, 4300.0)});
+                consonant_map.insert('s', Consonant {sampa: 's', start: 0, delay: 3000, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.01, position: 45, filter: ResonantFilter::new(48000, 5000.0, 700.0)});
                 consonant_map.insert('t', Consonant {sampa: 't', start: 0, delay: 1000, transition_time: 3500, on_time: 800, off_time: 1800, volume: 0.006, position: 42, filter: ResonantFilter::new(48000, 3400.0, 5000.0)});
+                consonant_map.insert('v', Consonant {sampa: 'v', start: 0, delay: 700, transition_time: 4000, on_time: 2000, off_time: 2000, volume: 0.007, position: 44, filter: ResonantFilter::new(48000, 1400.0, 5000.0)});
+                consonant_map.insert('D', Consonant {sampa: 'D', start: 0, delay: 200, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.01, position: 42, filter: ResonantFilter::new(48000, 4500.0, 5000.0)});
+                consonant_map.insert('S', Consonant {sampa: 'S', start: 0, delay: 3000, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.01, position: 45, filter: ResonantFilter::new(48000, 3000.0, 700.0)});
+                consonant_map.insert('T', Consonant {sampa: 'T', start: 0, delay: 1500, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.01, position: 42, filter: ResonantFilter::new(48000, 4500.0, 5000.0)});
+                consonant_map.insert('Z', Consonant {sampa: 'Z', start: 0, delay: 100, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.01, position: 45, filter: ResonantFilter::new(48000, 3000.0, 700.0)});
             }
         }
         shape_map.insert('b', shape_map.get(&'m').unwrap().clone());
@@ -130,11 +139,22 @@ impl Phonemes {
         nasal_vowels.insert('m');
         nasal_vowels.insert('n');
         nasal_vowels.insert('N');
-        Self { shape_map: shape_map, nasal_vowels: nasal_vowels, consonant_map: consonant_map }
+        let mut amplification = HashMap::new();
+        amplification.insert('o', 1.5);
+        amplification.insert('u', 1.8);
+        amplification.insert('y', 1.5);
+        Self { shape_map: shape_map, nasal_vowels: nasal_vowels, consonant_map: consonant_map, amplification: amplification }
     }
 
     pub fn get_vowel_shape(&self, vowel: char) -> Option<&Vec<f32>> {
         self.shape_map.get(&vowel)
+    }
+
+    pub fn get_amplification(&self, vowel: char) -> f32 {
+        match self.amplification.get(&vowel) {
+            Some(a) => *a,
+            None => 1.0
+        }
     }
 
     pub fn get_nasal_coupling(&self, vowel: char) -> f32 {

@@ -4,7 +4,7 @@ use crate::phonemes::{Consonant, Phonemes};
 use crate::random::Random;
 use crate::syllable::Syllable;
 use crate::VoicePart;
-use std::sync::{Arc, mpsc};
+use std::sync::mpsc;
 
 pub enum Message {
     NoteOn {syllable: String, note_index: i32, velocity: f32},
@@ -197,11 +197,27 @@ impl Director {
         else {
             // Play any consonants, then start up the new note.
 
-            for c in &consonants {
-                delay = self.add_consonant(delay, *c);
+            if let Some(note) = &self.current_note {
+                let final_consonants = note.syllable.final_consonants.clone();
+                for c in final_consonants {
+                    let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, c, None);
+                    delay += delay_to_consonant;
+                }
+            }
+            let adjacent_vowel = match new_syllable.initial_vowels.first() {
+                Some(v) => *v,
+                None => new_syllable.main_vowel
+            };
+            for i in 0..new_syllable.initial_consonants.len() {
+                let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, new_syllable.initial_consonants[i], Some(adjacent_vowel));
+                if i == new_syllable.initial_consonants.len()-1 {
+                    delay += delay_to_vowel;
+                }
+                else {
+                    delay += delay_to_consonant;
+                }
             }
             self.add_transition(delay, 0, TransitionData::FrequencyChange {start_frequency: frequency, end_frequency: frequency});
-            self.add_transition(delay, 2000, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: 1.0});
         }
 
         // Play any initial vowels.
@@ -214,6 +230,7 @@ impl Director {
 
         let shape = self.phonemes.get_vowel_shape(new_syllable.main_vowel).unwrap();
         let nasal_coupling = self.phonemes.get_nasal_coupling(new_syllable.main_vowel);
+        let amplification = self.phonemes.get_amplification(new_syllable.main_vowel);
         let transition_time = if self.current_note.is_some() || new_syllable.initial_vowels.len() > 0 || consonants.len() > 0 {self.vowel_transition_time} else {0};
         let start_shape = match self.consonants.last() {
             Some(c) => {
@@ -227,6 +244,10 @@ impl Director {
             end_shape: shape.clone(),
             start_nasal_coupling: self.nasal_coupling_after_transitions,
             end_nasal_coupling: nasal_coupling
+        });
+        self.add_transition(delay, 2000, TransitionData::EnvelopeChange {
+            start_envelope: self.envelope_after_transitions,
+            end_envelope: amplification
         });
 
         // Record the note we're now playing.
@@ -270,7 +291,8 @@ impl Director {
                 });
             }
             for c in &consonants {
-                delay = self.add_consonant(delay, *c);
+                let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, *c, None);
+                delay += delay_to_consonant;
             }
         }
         self.current_note = None;
@@ -279,16 +301,21 @@ impl Director {
     fn add_transient_vowel(&mut self, delay: i64, c: char) -> i64 {
         let shape = self.phonemes.get_vowel_shape(c).unwrap();
         let nasal_coupling = self.phonemes.get_nasal_coupling(c);
+        let amplification = self.phonemes.get_amplification(c);
         self.add_transition(delay, self.vowel_transition_time, TransitionData::ShapeChange {
             start_shape: self.shape_after_transitions.clone(),
             end_shape: shape.clone(),
             start_nasal_coupling: self.nasal_coupling_after_transitions,
             end_nasal_coupling: nasal_coupling
         });
+        self.add_transition(delay, self.vowel_transition_time, TransitionData::EnvelopeChange {
+            start_envelope: self.envelope_after_transitions,
+            end_envelope: amplification
+        });
         delay+self.vowel_delay+self.vowel_transition_time
     }
 
-    fn add_consonant(&mut self, delay: i64, c: char) -> i64 {
+    fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>) -> (i64, i64) {
         // let mut consonant = Consonant {
         //     sampa: c,
         //     start: self.step+delay,
@@ -302,9 +329,21 @@ impl Director {
         // };
         let mut consonant = self.phonemes.get_consonant(c).unwrap();
         consonant.start = self.step+delay;
-        let delay = delay+consonant.delay;
+        let delay_to_consonant = consonant.delay+consonant.on_time+consonant.off_time;
+        let delay_to_vowel = consonant.delay+consonant.transition_time;
         self.consonants.push(consonant);
-        delay
+        if let Some(vowel) = adjacent_vowel {
+            let start_shape = self.phonemes.get_consonant_shape(&consonant, vowel).unwrap();
+            let end_shape = self.phonemes.get_vowel_shape(vowel).unwrap();
+            let nasal_coupling = self.phonemes.get_nasal_coupling(vowel);
+            self.add_transition(delay, self.vowel_transition_time, TransitionData::ShapeChange {
+                start_shape: start_shape.clone(),
+                end_shape: end_shape.clone(),
+                start_nasal_coupling: 0.0,
+                end_nasal_coupling: nasal_coupling
+            });
+        }
+        (delay_to_consonant, delay_to_vowel)
     }
 
     fn add_transition(&mut self, delay: i64, duration: i64, data: TransitionData) {

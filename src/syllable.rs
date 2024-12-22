@@ -1,5 +1,5 @@
 const VOWELS: &str = "aeilmnouyAEINOUVY2369&{";
-const CONSONANTS: &str = "bdghkpt";
+const CONSONANTS: &str = "bdfghkpstvDSTZ";
 
 pub struct Syllable {
     pub initial_consonants: Vec<char>,
