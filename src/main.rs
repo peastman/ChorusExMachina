@@ -87,7 +87,7 @@ impl App for MainGui {
                 let response = ui.text_edit_singleline(&mut controller.syllable);
                 if response.changed() {
                     if controller.syllable.len() > 0 {
-                        let phonemes = Phonemes::new(VoicePart::Bass);
+                        let phonemes = Phonemes::new(VoicePart::Alto);
                         let cons = controller.syllable.chars().next().unwrap();
                         if let Some(c) = phonemes.get_consonant(cons) {
                             self.consonant_delay = c.delay;
@@ -125,7 +125,7 @@ impl App for MainGui {
             if ui.add(egui::Slider::new(&mut self.consonant_frequency, 100.0..=5000.0).text("Consonant Frequency")).dragged() {
                 let _ = controller.sender.send(Message::SetConsonants {on_time: self.consonant_on_time, off_time: self.consonant_off_time, volume: self.consonant_volume, position: self.consonant_position, frequency: self.consonant_frequency, bandwidth: self.consonant_bandwidth});
             }
-            if ui.add(egui::Slider::new(&mut self.consonant_bandwidth, 100.0..=5000.0).text("Consonant Bandwidth")).dragged() {
+            if ui.add(egui::Slider::new(&mut self.consonant_bandwidth, 100.0..=6000.0).text("Consonant Bandwidth")).dragged() {
                 let _ = controller.sender.send(Message::SetConsonants {on_time: self.consonant_on_time, off_time: self.consonant_off_time, volume: self.consonant_volume, position: self.consonant_position, frequency: self.consonant_frequency, bandwidth: self.consonant_bandwidth});
             }
         });
@@ -134,7 +134,7 @@ impl App for MainGui {
 
 fn main() -> Result<(), eframe::Error> {
     let (sender, receiver) = mpsc::channel();
-    let player = Player { director: Director::new(VoicePart::Bass, 1, receiver) };
+    let player = Player { director: Director::new(VoicePart::Alto, 1, receiver) };
     let (_stream, handle) = OutputStream::try_default().unwrap();
     let _result = handle.play_raw(player.convert_samples());
 
