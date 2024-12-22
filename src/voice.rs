@@ -108,7 +108,7 @@ impl Glottis {
 
         let x = (t-0.5-(t-0.5).round()).abs();
         let window = if x < 0.25 {0.5+0.5*(4.0*PI*x).cos()} else {0.0};
-        let noise = self.noise_filter.process(self.noise*(0.2+window)*self.random.get_normal());
+        let noise = self.noise_filter.process(self.noise*(0.2+window)*(2.0*self.random.get_uniform()-1.0));
 
         // Compute the output.
 

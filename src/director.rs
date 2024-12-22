@@ -382,12 +382,12 @@ impl Director {
                 consonant_position = consonant.position;
                 if i < consonant.on_time {
                     let volume = consonant.volume*(i as f32 / consonant.on_time as f32);
-                    consonant_noise = volume*consonant.filter.process(self.random.get_normal());
+                    consonant_noise = volume*consonant.filter.process(2.0*self.random.get_uniform()-1.0);
                 }
                 else if i < consonant.on_time+consonant.off_time {
                     let j = i-consonant.on_time;
                     let volume = consonant.volume*((consonant.off_time-j) as f32 / consonant.off_time as f32);
-                    consonant_noise = volume*consonant.filter.process(self.random.get_normal());
+                    consonant_noise = volume*consonant.filter.process(2.0*self.random.get_uniform()-1.0);
                 }
                 else {
                     self.consonants.remove(0);
@@ -494,7 +494,7 @@ impl Director {
     }
 
     fn update_sound(&mut self) {
-        let noise = 0.03*(1.0-self.volume)*(1.0-self.volume);
+        let noise = 0.05*(1.0-self.volume)*(1.0-self.volume);
         for voice in &mut self.voices {
             voice.set_noise(noise);
         }
