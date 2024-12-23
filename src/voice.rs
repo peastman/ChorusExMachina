@@ -175,38 +175,43 @@ impl Voice {
         let vocal_length;
         let coupling_position;
         let vibrato_frequency;
+        let nasal_shape;
         match voice_part {
             VoicePart::Soprano => {
                 vocal_length = 42;
-                coupling_position = 19;
+                coupling_position = 22;
                 vibrato_frequency = 6.3;
+                nasal_shape = vec![1.52, 1.71, 2.08, 2.78, 3.53, 4.28, 4.33, 2.89, 2.49, 2.42, 2.13, 1.95, 1.83, 1.74, 1.41, 0.878, 0.769, 1.15, 1.12, 1.09, 1.06, 0.672];
             }
             VoicePart::Alto => {
                 vocal_length = 44;
-                coupling_position = 20;
+                coupling_position = 22;
                 vibrato_frequency = 5.3;
+                nasal_shape = vec![1.52, 1.71, 2.08, 2.78, 3.53, 4.28, 4.33, 2.89, 2.49, 2.42, 2.13, 1.95, 1.83, 1.74, 1.41, 0.878, 0.769, 1.15, 1.12, 1.09, 1.06, 0.672];
             }
             VoicePart::Tenor => {
                 vocal_length = 46;
-                coupling_position = 21;
+                coupling_position = 23;
                 vibrato_frequency = 5.3;
+                nasal_shape = vec![1.52, 1.7, 2.04, 2.68, 3.38, 4.18, 4.4, 3.4, 2.45, 2.46, 2.28, 2.0, 1.88, 1.8, 1.65, 1.24, 0.735, 0.873, 1.17, 1.09, 1.1, 1.03, 0.667];
             }
             VoicePart::Bass => {
                 vocal_length = 48;
-                coupling_position = 22;
+                coupling_position = 24;
                 vibrato_frequency = 5.2;
+                nasal_shape = vec![1.52, 1.69, 1.99, 2.59, 3.3, 4.02, 4.44, 3.77, 2.57, 2.49, 2.38, 2.09, 1.94, 1.83, 1.76, 1.52, 1.05, 0.699, 0.972, 1.18, 1.07, 1.12, 1.01, 0.663];
             }
         }
         let mut voice = Voice {
             glottis: Glottis::new(sample_rate),
             vocal: Waveguide::new(vocal_length),
-            nasal: Waveguide::new(28),
+            nasal: Waveguide::new(nasal_shape.len()),
             volume: 1.0,
             nasal_coupling: 0.0,
             coupling_position: coupling_position,
             nasal_off_after_step: 0
         };
-        voice.nasal.set_shape(&vec![1.52, 1.67, 1.86, 2.35, 2.92, 3.46, 4.16, 4.41, 4.01, 3.24, 3.22, 3.26, 3.17, 2.81, 2.65, 2.56, 2.5, 2.34, 1.94, 1.43, 1.05, 1.41, 1.71, 1.6, 1.48, 1.54, 1.23, 0.885]);
+        voice.nasal.set_shape(&nasal_shape);
         voice.glottis.vibrato_frequency = vibrato_frequency;
         voice
     }

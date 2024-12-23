@@ -200,7 +200,7 @@ impl Director {
             if let Some(note) = &self.current_note {
                 let final_consonants = note.syllable.final_consonants.clone();
                 for c in final_consonants {
-                    let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, c, None);
+                    let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, c, None, true);
                     delay += delay_to_consonant;
                 }
             }
@@ -209,7 +209,7 @@ impl Director {
                 None => new_syllable.main_vowel
             };
             for i in 0..new_syllable.initial_consonants.len() {
-                let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, new_syllable.initial_consonants[i], Some(adjacent_vowel));
+                let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, new_syllable.initial_consonants[i], Some(adjacent_vowel), false);
                 if i == new_syllable.initial_consonants.len()-1 {
                     delay += delay_to_vowel;
                 }
@@ -268,9 +268,12 @@ impl Director {
         for transition in &self.transitions {
             delay = i64::max(delay, transition.end-self.step);
         }
+        let mut final_vowel = None;
         if let Some(note) = &self.current_note {
+            final_vowel = Some(note.syllable.main_vowel);
             for c in &note.syllable.final_vowels.clone() {
                 delay = self.add_transient_vowel(delay, *c);
+                final_vowel = Some(*c);
             }
         }
         self.add_transition(delay, 3000, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: 0.0});
@@ -281,17 +284,21 @@ impl Director {
             }
         }
         if consonants.len() > 0 {
-            let consonant_shape = self.phonemes.get_vowel_shape(*consonants.last().unwrap());
-            if consonant_shape.is_some() {
-                self.add_transition(delay, 3000, TransitionData::ShapeChange {
-                    start_shape: self.shape_after_transitions.clone(),
-                    end_shape: consonant_shape.unwrap().clone(),
-                    start_nasal_coupling: self.nasal_coupling_after_transitions,
-                    end_nasal_coupling: 0.0
-                });
+            if let Some(vowel) = final_vowel {
+                let consonant = self.phonemes.get_consonant(*consonants.last().unwrap()).unwrap();
+                let consonant_shape = self.phonemes.get_consonant_shape(&consonant, vowel);
+                if consonant_shape.is_some() {
+                    self.add_transition(delay, 1500, TransitionData::ShapeChange {
+                        start_shape: self.shape_after_transitions.clone(),
+                        end_shape: consonant_shape.unwrap().clone(),
+                        start_nasal_coupling: self.nasal_coupling_after_transitions,
+                        end_nasal_coupling: 0.0
+                    });
+                    delay += 1500;
+                }
             }
             for c in &consonants {
-                let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, *c, None);
+                let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, *c, final_vowel, true);
                 delay += delay_to_consonant;
             }
         }
@@ -315,7 +322,7 @@ impl Director {
         delay+self.vowel_delay+self.vowel_transition_time
     }
 
-    fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>) -> (i64, i64) {
+    fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool) -> (i64, i64) {
         // let mut consonant = Consonant {
         //     sampa: c,
         //     start: self.step+delay,
@@ -334,7 +341,7 @@ impl Director {
         self.consonants.push(consonant);
         if let Some(vowel) = adjacent_vowel {
             let start_shape = self.phonemes.get_consonant_shape(&consonant, vowel).unwrap();
-            let end_shape = self.phonemes.get_vowel_shape(vowel).unwrap();
+            let end_shape = if is_final {&start_shape} else {self.phonemes.get_vowel_shape(vowel).unwrap()};
             let nasal_coupling = self.phonemes.get_nasal_coupling(vowel);
             self.add_transition(delay, self.vowel_transition_time, TransitionData::ShapeChange {
                 start_shape: start_shape.clone(),
