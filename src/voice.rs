@@ -44,7 +44,7 @@ impl Glottis {
             vibrato_frequency: 5.0,
             vibrato_amplitude: 0.02,
             vibrato_frequency_drift_amplitude: 0.05,
-            vibrato_amplitude_drift_amplitude: 0.2,
+            vibrato_amplitude_drift_amplitude: 0.3,
             sample_rate: sample_rate,
             phase: random.get_uniform(),
             frequency_drift: 0.0,

@@ -120,7 +120,7 @@ impl Director {
             frequency_after_transitions: 0.0,
             message_receiver: message_receiver,
             vowel_delay: 0,
-            vowel_transition_time: 2000,
+            vowel_transition_time: 3300,
             consonant_delay: 3000,
             consonant_transition_time: 0,
             consonant_on_time: 1000,
@@ -172,7 +172,8 @@ impl Director {
         if let Some(note) = &self.current_note {
             current_note_index = note.note_index;
             for c in &note.syllable.final_vowels.clone() {
-                delay = self.add_transient_vowel(delay, *c);
+                let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, true);
+                delay = self.add_transient_vowel(delay, *c, vowel_delay, vowel_transition_time);
             }
             if consonants.len() == 0 {
                 legato = true;
@@ -197,12 +198,31 @@ impl Director {
         else {
             // Play any consonants, then start up the new note.
 
+            let mut final_consonants = Vec::new();
+            let mut final_vowel = None;
             if let Some(note) = &self.current_note {
-                let final_consonants = note.syllable.final_consonants.clone();
-                for c in final_consonants {
-                    let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, c, None, true);
-                    delay += delay_to_consonant;
+                final_vowel = Some(note.syllable.main_vowel);
+                if note.syllable.final_vowels.len() > 0 {
+                    final_vowel = Some(*note.syllable.final_vowels.last().unwrap());
                 }
+                let final_consonants = note.syllable.final_consonants.clone();
+            }
+            if let Some(vowel) = final_vowel {
+                let consonant = self.phonemes.get_consonant(*consonants.last().unwrap()).unwrap();
+                let consonant_shape = self.phonemes.get_consonant_shape(&consonant, vowel);
+                if consonant_shape.is_some() {
+                    self.add_transition(delay, 1500, TransitionData::ShapeChange {
+                        start_shape: self.shape_after_transitions.clone(),
+                        end_shape: consonant_shape.unwrap().clone(),
+                        start_nasal_coupling: self.nasal_coupling_after_transitions,
+                        end_nasal_coupling: 0.0
+                    });
+                    delay += 1500;
+                }
+            }
+            for c in final_consonants {
+                let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, c, final_vowel, true);
+                delay += delay_to_consonant;
             }
             let adjacent_vowel = match new_syllable.initial_vowels.first() {
                 Some(v) => *v,
@@ -223,7 +243,8 @@ impl Director {
         // Play any initial vowels.
 
         for c in &new_syllable.initial_vowels {
-            delay = self.add_transient_vowel(delay, *c);
+            let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, false);
+            delay = self.add_transient_vowel(delay, *c, vowel_delay, vowel_transition_time);
         }
 
         // Start the main vowel playing.
@@ -272,7 +293,8 @@ impl Director {
         if let Some(note) = &self.current_note {
             final_vowel = Some(note.syllable.main_vowel);
             for c in &note.syllable.final_vowels.clone() {
-                delay = self.add_transient_vowel(delay, *c);
+                let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, true);
+                delay = self.add_transient_vowel(delay, *c, vowel_delay, vowel_transition_time);
                 final_vowel = Some(*c);
             }
         }
@@ -305,21 +327,21 @@ impl Director {
         self.current_note = None;
     }
 
-    fn add_transient_vowel(&mut self, delay: i64, c: char) -> i64 {
+    fn add_transient_vowel(&mut self, delay: i64, c: char, vowel_delay: i64, vowel_transition_time: i64) -> i64 {
         let shape = self.phonemes.get_vowel_shape(c).unwrap();
         let nasal_coupling = self.phonemes.get_nasal_coupling(c);
         let amplification = self.phonemes.get_amplification(c);
-        self.add_transition(delay, self.vowel_transition_time, TransitionData::ShapeChange {
+        self.add_transition(delay, vowel_transition_time, TransitionData::ShapeChange {
             start_shape: self.shape_after_transitions.clone(),
             end_shape: shape.clone(),
             start_nasal_coupling: self.nasal_coupling_after_transitions,
             end_nasal_coupling: nasal_coupling
         });
-        self.add_transition(delay, self.vowel_transition_time, TransitionData::EnvelopeChange {
+        self.add_transition(delay, vowel_transition_time, TransitionData::EnvelopeChange {
             start_envelope: self.envelope_after_transitions,
             end_envelope: amplification
         });
-        delay+self.vowel_delay+self.vowel_transition_time
+        delay+vowel_delay+vowel_transition_time
     }
 
     fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool) -> (i64, i64) {
@@ -468,13 +490,15 @@ impl Director {
                         self.update_volume();
                     }
                     TransitionData::ShapeChange {start_shape, end_shape, start_nasal_coupling, end_nasal_coupling} => {
+                        let coupling = weight1*start_nasal_coupling + weight2*end_nasal_coupling;
+                        let coupling = 8.0*coupling*coupling*coupling*coupling;
                         for voice in &mut self.voices {
                             let n = start_shape.len();
                             let mut shape = vec![0.0; n];
                             for i in 0..n {
                                 shape[i] = weight1*start_shape[i] + weight2*end_shape[i];
                             }
-                            voice.set_vocal_shape(&shape, weight1*start_nasal_coupling + weight2*end_nasal_coupling);
+                            voice.set_vocal_shape(&shape, coupling);
                         }
                     }
                     TransitionData::FrequencyChange {start_frequency, end_frequency} => {
@@ -512,5 +536,24 @@ impl Director {
                 voice.set_rd(rd);
             }
         }
+    }
+
+    fn get_vowel_timing(&self, vowel: char, is_final: bool) -> (i64, i64) {
+        if vowel == 'm' {
+            if is_final {
+                return (0, 1500);
+            }
+            return (3500, 1000);
+        }
+        if vowel == 'n' {
+            if is_final {
+                return (0, 1500);
+            }
+            return (1000, 1500);
+        }
+        if vowel == 'N' {
+            return (1000, 1500);
+        }
+        (self.vowel_delay, self.vowel_transition_time)
     }
 }
