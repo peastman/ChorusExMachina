@@ -4,6 +4,7 @@ use crate::phonemes::{Consonant, Phonemes};
 use crate::random::Random;
 use crate::syllable::Syllable;
 use crate::VoicePart;
+use std::f32::consts::PI;
 use std::sync::mpsc;
 
 pub enum Message {
@@ -11,6 +12,7 @@ pub enum Message {
     NoteOff,
     SetVolume {volume: f32},
     SetPitchBend {semitones: f32},
+    SetStereoWidth {width: f32},
     SetDelays {vowel_delay: i64, vowel_transition_time: i64, consonant_delay: i64, consonant_transition_time: i64},
     SetConsonants {on_time: i64, off_time: i64, volume: f32, position: usize, frequency: f32, bandwidth: f32}
 }
@@ -45,6 +47,7 @@ pub struct Director {
     transitions: Vec<Transition>,
     current_note: Option<Note>,
     consonants: Vec<Consonant>,
+    consonant_delays: Vec<i64>,
     volume: f32,
     envelope: f32,
     frequency: f32,
@@ -55,6 +58,8 @@ pub struct Director {
     envelope_after_transitions: f32,
     frequency_after_transitions: f32,
     message_receiver: mpsc::Receiver<Message>,
+    stereo_width: f32,
+    voice_pan: Vec<f32>,
     vowel_delay: i64,
     vowel_transition_time: i64,
     consonant_delay: i64,
@@ -68,7 +73,7 @@ pub struct Director {
 }
 
 impl Director {
-    pub fn new(voice_part: VoicePart, voice_count: i32, message_receiver: mpsc::Receiver<Message>) -> Self {
+    pub fn new(voice_part: VoicePart, voice_count: usize, message_receiver: mpsc::Receiver<Message>) -> Self {
         let mut voices = vec![];
         for _i in 0..voice_count {
             voices.push(Voice::new(voice_part, 48000));
@@ -98,7 +103,7 @@ impl Director {
                 highest_note = 67;
             }
         }
-        Self {
+        let mut result = Self {
             voices: voices,
             voice_part: voice_part.clone(),
             lowest_note: lowest_note,
@@ -109,6 +114,7 @@ impl Director {
             transitions: vec![],
             current_note: None,
             consonants: vec![],
+            consonant_delays: vec![0; voice_count],
             volume: 1.0,
             envelope: 0.0,
             frequency: 1.0,
@@ -119,6 +125,8 @@ impl Director {
             envelope_after_transitions: 0.0,
             frequency_after_transitions: 0.0,
             message_receiver: message_receiver,
+            stereo_width: 0.3,
+            voice_pan: vec![0.0; voice_count],
             vowel_delay: 0,
             vowel_transition_time: 3300,
             consonant_delay: 3000,
@@ -129,7 +137,9 @@ impl Director {
             consonant_position: 40,
             consonant_frequency: 2000.0,
             consonant_bandwidth: 3000.0
-        }
+        };
+        result.update_pan_positions();
+        result
     }
 
     fn note_on(&mut self, syllable: &str, note_index: i32, velocity: f32) -> Result<(), &'static str> {
@@ -211,13 +221,13 @@ impl Director {
                 let consonant = self.phonemes.get_consonant(*consonants.last().unwrap()).unwrap();
                 let consonant_shape = self.phonemes.get_consonant_shape(&consonant, vowel);
                 if consonant_shape.is_some() {
-                    self.add_transition(delay, 1500, TransitionData::ShapeChange {
+                    self.add_transition(delay, 1000, TransitionData::ShapeChange {
                         start_shape: self.shape_after_transitions.clone(),
                         end_shape: consonant_shape.unwrap().clone(),
                         start_nasal_coupling: self.nasal_coupling_after_transitions,
                         end_nasal_coupling: 0.0
                     });
-                    delay += 1500;
+                    delay += 1000;
                 }
             }
             for c in final_consonants {
@@ -357,6 +367,7 @@ impl Director {
         //     filter: ResonantFilter::new(48000, self.consonant_frequency, self.consonant_bandwidth)
         // };
         let mut consonant = self.phonemes.get_consonant(c).unwrap();
+        // let delay = if is_final {delay+2000} else {delay};
         consonant.start = self.step+delay;
         let delay_to_consonant = consonant.delay+consonant.on_time+consonant.off_time;
         let delay_to_vowel = consonant.delay+consonant.transition_time;
@@ -392,46 +403,60 @@ impl Director {
         self.transitions.push(transition);
     }
 
-    pub fn generate(&mut self) -> f32 {
+    pub fn generate(&mut self) -> (f32, f32) {
         if self.step%200 == 0 {
             self.process_messages();
             self.update_transitions();
         }
         self.step += 1;
-        if self.envelope > 0.0 {
+        if self.envelope > 0.0 || self.consonants.len() != 0 {
             self.off_after_step = self.step+500;
         }
-
-        let mut consonant_noise = 0.0;
-        let mut consonant_position = 0;
-        if self.consonants.len() > 0 {
-            let consonant = &mut self.consonants[0];
-            let i = self.step-consonant.start;
-            if i > 0 {
-                consonant_position = consonant.position;
-                if i < consonant.on_time {
-                    let volume = consonant.volume*(i as f32 / consonant.on_time as f32);
-                    consonant_noise = volume*consonant.filter.process(2.0*self.random.get_uniform()-1.0);
+        let mut left = 0.0;
+        let mut right = 0.0;
+        if self.step < self.off_after_step {
+            let mut consonant_finished = (self.consonants.len() > 0);
+            for i in 0..self.voices.len() {
+                let mut consonant_noise = 0.0;
+                let mut consonant_position = 0;
+                if self.consonants.len() > 0 {
+                    let consonant = &mut self.consonants[0];
+                    if !consonant.mono || i == self.voices.len()/2 {
+                        let j = self.step-consonant.start-self.consonant_delays[i];
+                        if j > 0 {
+                            consonant_position = consonant.position;
+                            if j < consonant.on_time {
+                                let volume = consonant.volume*(j as f32 / consonant.on_time as f32);
+                                consonant_noise = volume*consonant.filter.process(2.0*self.random.get_uniform()-1.0);
+                            }
+                            else if j < consonant.on_time+consonant.off_time {
+                                let k = j-consonant.on_time;
+                                let volume = consonant.volume*((consonant.off_time-k) as f32 / consonant.off_time as f32);
+                                consonant_noise = volume*consonant.filter.process(2.0*self.random.get_uniform()-1.0);
+                            }
+                        }
+                        if consonant.mono {
+                            consonant_noise *= (self.voices.len() as f32).sqrt();
+                        }
+                        if j < consonant.on_time+consonant.off_time {
+                            consonant_finished = false;
+                        }
+                    }
                 }
-                else if i < consonant.on_time+consonant.off_time {
-                    let j = i-consonant.on_time;
-                    let volume = consonant.volume*((consonant.off_time-j) as f32 / consonant.off_time as f32);
-                    consonant_noise = volume*consonant.filter.process(2.0*self.random.get_uniform()-1.0);
-                }
-                else {
-                    self.consonants.remove(0);
+                let signal = self.voices[i].generate(self.step, consonant_noise, consonant_position);
+                left += self.voice_pan[i].cos()*signal;
+                right += self.voice_pan[i].sin()*signal;
+            }
+            if consonant_finished {
+                self.consonants.remove(0);
+                for i in 0..self.consonant_delays.len() {
+                    if i != self.consonant_delays.len()/2 {
+                        self.consonant_delays[i] = (self.random.get_int()%200) as i64;
+                    }
                 }
             }
         }
-
-
-        let mut sum = 0.0;
-        if self.step < self.off_after_step || self.consonants.len() != 0 {
-            for voice in &mut self.voices {
-                sum += voice.generate(self.step, consonant_noise, consonant_position);
-            }
-        }
-        0.08*sum
+        (0.08*left, 0.08*right)
     }
 
     fn process_messages(&mut self) {
@@ -453,6 +478,10 @@ impl Director {
                         Message::SetPitchBend {semitones} => {
                             self.bend = f32::powf(2.0, semitones as f32/12.0);
                             self.update_frequency();
+                        }
+                        Message::SetStereoWidth {width} => {
+                            self.stereo_width = width;
+                            self.update_pan_positions();
                         }
                         Message::SetDelays {vowel_delay, vowel_transition_time, consonant_delay, consonant_transition_time} => {
                             self.vowel_delay = vowel_delay;
@@ -534,6 +563,18 @@ impl Director {
             let rd = 1.4 + 0.4*x + 0.2*self.volume;
             for voice in &mut self.voices {
                 voice.set_rd(rd);
+            }
+        }
+    }
+
+    fn update_pan_positions(&mut self) {
+        let voice_count = self.voices.len();
+        if voice_count == 1 {
+            self.voice_pan[0] = 0.25*PI;
+        }
+        else {
+            for i in 0..voice_count {
+                self.voice_pan[i] = 0.5*PI*(0.5 + self.stereo_width*(i as f32 / (voice_count-1) as f32 - 0.5));
             }
         }
     }

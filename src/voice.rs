@@ -238,8 +238,10 @@ impl Voice {
     }
 
     pub fn generate(&mut self, step: i64, noise: f32, noise_position: usize) -> f32 {
-        self.vocal.right[noise_position] += noise;
-        self.vocal.left[noise_position] += noise;
+        if self.vocal.area[noise_position] > 0.0 {
+            self.vocal.right[noise_position] += noise;
+            self.vocal.left[noise_position] += noise;
+        }
         let excitation = self.volume*self.glottis.generate(step);
         let n = self.vocal.right.len();
         let nasal_n = self.nasal.right.len();

@@ -11,20 +11,29 @@ use eframe::egui::{self, CentralPanel};
 use eframe::{App, NativeOptions};
 
 struct Player {
-    director: Director
+    director: Director,
+    next_output: f32,
+    has_next: bool
 }
 
 impl Iterator for Player {
     type Item = f32;
 
     fn next(&mut self) -> Option<f32> {
-        Some(self.director.generate())
+        if self.has_next {
+            self.has_next = false;
+            return Some(self.next_output);
+        }
+        let (left, right) = self.director.generate();
+        self.next_output = right;
+        self.has_next = true;
+        Some(left)
     }
 }
 
 impl Source for Player {
     fn channels(&self) -> u16 {
-        return 1;
+        return 2;
     }
 
     fn sample_rate(&self) -> u32 {
@@ -134,7 +143,7 @@ impl App for MainGui {
 
 fn main() -> Result<(), eframe::Error> {
     let (sender, receiver) = mpsc::channel();
-    let player = Player { director: Director::new(VoicePart::Alto, 1, receiver) };
+    let player = Player { director: Director::new(VoicePart::Alto, 4, receiver), next_output: 0.0, has_next: false };
     let (_stream, handle) = OutputStream::try_default().unwrap();
     let _result = handle.play_raw(player.convert_samples());
 
