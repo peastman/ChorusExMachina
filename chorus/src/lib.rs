@@ -5,7 +5,7 @@ pub mod syllable;
 pub mod random;
 pub mod filter;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum VoicePart {
     Soprano,
     Alto,

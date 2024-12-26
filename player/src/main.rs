@@ -51,14 +51,29 @@ impl Source for Player {
 
 struct MidiController {
     pub sender: mpsc::Sender<Message>,
-    pub syllable: String,
+    pub phrase: String,
+    syllables: Vec<String>,
+    next_syllable: usize,
     last_note: u8,
+}
+
+impl MidiController {
+    fn new(sender: mpsc::Sender<Message>, phrase: &str) -> Self {
+        Self {
+            sender: sender,
+            phrase: phrase.to_string(),
+            syllables : phrase.split_whitespace().map(str::to_string).collect(),
+            next_syllable: 0,
+            last_note: 255
+        }
+    }
 }
 
 fn process_midi_message(timestamp: u64, message: &[u8], data: &mut Arc<Mutex<MidiController>>) {
     let mut controller = data.lock().unwrap();
-    if message[0] == 144 {
-        let _ = controller.sender.send(Message::NoteOn {syllable: controller.syllable.clone(), note_index: message[1] as i32, velocity: message[2] as f32 / 127.0});
+    if message[0] == 144 && controller.syllables.len() > 0 {
+        let _ = controller.sender.send(Message::NoteOn {syllable: controller.syllables[controller.next_syllable].clone(), note_index: message[1] as i32, velocity: message[2] as f32 / 127.0});
+        controller.next_syllable = (controller.next_syllable+1)%controller.syllables.len();
         controller.last_note = message[1];
     }
     else if message[0] == 128 && controller.last_note == message[1] {
@@ -92,12 +107,14 @@ impl App for MainGui {
         let mut controller = self.controller_ref.lock().unwrap();
         CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
-                ui.label("Syllable");
-                let response = ui.text_edit_singleline(&mut controller.syllable);
+                ui.label("Phrase");
+                let response = ui.text_edit_singleline(&mut controller.phrase);
                 if response.changed() {
-                    if controller.syllable.len() > 0 {
+                    controller.syllables = controller.phrase.split_whitespace().map(str::to_string).collect();
+                    controller.next_syllable = 0;
+                    if controller.phrase.len() > 0 {
                         let phonemes = Phonemes::new(VoicePart::Alto);
-                        let cons = controller.syllable.chars().next().unwrap();
+                        let cons = controller.phrase.chars().next().unwrap();
                         if let Some(c) = phonemes.get_consonant(cons) {
                             self.consonant_delay = c.delay;
                             self.vowel_transition_time = c.transition_time;
@@ -150,7 +167,7 @@ fn main() -> Result<(), eframe::Error> {
     let midi_in = MidiInput::new("Chorus").unwrap();
     let in_ports = midi_in.ports();
     let in_port = &in_ports[1];
-    let controller = Arc::new(Mutex::new(MidiController {sender: sender.clone(), last_note: 255, syllable: "A".to_string()}));
+    let controller = Arc::new(Mutex::new(MidiController::new(sender.clone(), "A")));
     let _conn_in = midi_in.connect(
         in_port,
         "midir-read-input",

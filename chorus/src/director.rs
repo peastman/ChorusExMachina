@@ -215,7 +215,7 @@ impl Director {
                 if note.syllable.final_vowels.len() > 0 {
                     final_vowel = Some(*note.syllable.final_vowels.last().unwrap());
                 }
-                let final_consonants = note.syllable.final_consonants.clone();
+                final_consonants = note.syllable.final_consonants.clone();
             }
             if let Some(vowel) = final_vowel {
                 let consonant = self.phonemes.get_consonant(*consonants.last().unwrap()).unwrap();
@@ -231,7 +231,7 @@ impl Director {
                 }
             }
             for c in final_consonants {
-                let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, c, final_vowel, true);
+                let (delay_to_consonant, _delay_to_vowel) = self.add_consonant(delay, c, final_vowel, true);
                 delay += delay_to_consonant;
             }
             let adjacent_vowel = match new_syllable.initial_vowels.first() {
@@ -330,7 +330,7 @@ impl Director {
                 }
             }
             for c in &consonants {
-                let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, *c, final_vowel, true);
+                let (delay_to_consonant, _delay_to_vowel) = self.add_consonant(delay, *c, final_vowel, true);
                 delay += delay_to_consonant;
             }
         }
@@ -415,7 +415,7 @@ impl Director {
         let mut left = 0.0;
         let mut right = 0.0;
         if self.step < self.off_after_step {
-            let mut consonant_finished = (self.consonants.len() > 0);
+            let mut consonant_finished = self.consonants.len() > 0;
             for i in 0..self.voices.len() {
                 let mut consonant_noise = 0.0;
                 let mut consonant_position = 0;
@@ -465,7 +465,7 @@ impl Director {
                 Ok(message) => {
                     match message {
                         Message::NoteOn {syllable, note_index, velocity} => {
-                            self.note_on(&syllable, note_index, velocity);
+                            let _ = self.note_on(&syllable, note_index, velocity);
                         }
                         Message::NoteOff => {
                             self.note_off();

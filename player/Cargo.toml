@@ -1,0 +1,11 @@
+[package]
+name = "player"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chorus = { path = "../chorus" }
+rodio = "0.20.1"
+midir = "0.10.1"
+egui = "0.30.0"
+eframe = "0.30.0"

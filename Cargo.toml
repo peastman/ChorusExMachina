@@ -1,10 +1,6 @@
-[package]
-name = "chorus"
-version = "0.1.0"
-edition = "2021"
+[workspace]
 
-[dependencies]
-rodio = "0.20.1"
-midir = "0.10.1"
-egui = "0.29.1"
-eframe = "0.29.1"
+members = [
+    "chorus",
+    "player",
+    "vowel_designer"]
