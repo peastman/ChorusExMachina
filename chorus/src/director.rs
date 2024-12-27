@@ -88,17 +88,17 @@ impl Director {
                 highest_note = 88;
             }
             VoicePart::Alto => {
-                vocal_length = 44;
+                vocal_length = 45;
                 lowest_note = 48;
                 highest_note = 79;
             }
             VoicePart::Tenor => {
-                vocal_length = 46;
+                vocal_length = 48;
                 lowest_note = 43;
                 highest_note = 72;
             }
             VoicePart::Bass => {
-                vocal_length = 48;
+                vocal_length = 50;
                 lowest_note = 36;
                 highest_note = 67;
             }
