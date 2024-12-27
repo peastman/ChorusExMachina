@@ -369,6 +369,10 @@ impl Director {
         let mut consonant = self.phonemes.get_consonant(c).unwrap();
         // let delay = if is_final {delay+2000} else {delay};
         consonant.start = self.step+delay;
+        if is_final {
+            consonant.volume *= 0.8;
+            consonant.off_time = (consonant.off_time as f32 * 0.8) as i64;
+        }
         let delay_to_consonant = consonant.delay+consonant.on_time+consonant.off_time;
         let delay_to_vowel = consonant.delay+consonant.transition_time;
         self.consonants.push(consonant);
