@@ -156,84 +156,40 @@ impl Director {
         // Prepare for playing the note.
 
         let new_syllable = Syllable::build(syllable)?;
+        if let Some(note) = &self.current_note {
+            if note.syllable.final_consonants.len() > 0 || new_syllable.initial_consonants.len() > 0 {
+                // Playing legato isn't possible, since there are consonants between the vowels.
+                // Finish the current note.
+
+                self.note_off();
+            }
+        }
         let frequency = 440.0 * f32::powf(2.0, (note_index-69) as f32/12.0);
         let mut delay = 0;
         for transition in &self.transitions {
             delay = i64::max(delay, transition.end-self.step);
         }
-
-        // Identify any consonants we need to play, either final consonants from the
-        // previous note or initial consonants from the new note.
-
-        let mut consonants = Vec::new();
         if let Some(note) = &self.current_note {
-            for c in &note.syllable.final_consonants {
-                consonants.push(*c);
-            }
-        }
-        for c in &new_syllable.initial_consonants {
-            consonants.push(*c);
-        }
+            // Play any final vowels from the previous note.
 
-        // Play any final vowels from the previous note.
-
-        let mut current_note_index = 0;
-        let mut legato = false;
-        if let Some(note) = &self.current_note {
-            current_note_index = note.note_index;
+            let current_note_index = note.note_index;
             for c in &note.syllable.final_vowels.clone() {
                 let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, true);
                 delay = self.add_transient_vowel(delay, *c, vowel_delay, vowel_transition_time);
             }
-            if consonants.len() == 0 {
-                legato = true;
-            }
-            else {
-                // Since there are consonants between the notes, we can't play them legato.
-                // Turn off the previous note.
 
-                self.add_transition(delay, 3000, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: 0.0});
-            }
-        }
-        if legato {
             // Smoothly transition between the two notes.
 
             let transition_time = (1100 + 270*(current_note_index-note_index).abs()) as i64;
             self.add_transition(delay, transition_time, TransitionData::FrequencyChange {start_frequency: self.frequency_after_transitions, end_frequency: frequency});
             let min_envelope = f32::powf(0.9, (current_note_index-note_index).abs() as f32);
             self.add_transition(delay, transition_time/2, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: min_envelope});
-            self.add_transition(delay+transition_time/2, transition_time/2, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: 1.0});
+            self.add_transition(delay+transition_time/2, transition_time/2, TransitionData::EnvelopeChange {start_envelope: min_envelope, end_envelope: 1.0});
             delay += transition_time;
         }
         else {
-            // Play any consonants, then start up the new note.
+            // Play any initial consonants from the new note.
 
-            let mut final_consonants = Vec::new();
-            let mut final_vowel = None;
-            if let Some(note) = &self.current_note {
-                final_vowel = Some(note.syllable.main_vowel);
-                if note.syllable.final_vowels.len() > 0 {
-                    final_vowel = Some(*note.syllable.final_vowels.last().unwrap());
-                }
-                final_consonants = note.syllable.final_consonants.clone();
-            }
-            if let Some(vowel) = final_vowel {
-                let consonant = self.phonemes.get_consonant(*consonants.last().unwrap()).unwrap();
-                let consonant_shape = self.phonemes.get_consonant_shape(&consonant, vowel);
-                if consonant_shape.is_some() {
-                    self.add_transition(delay, 1000, TransitionData::ShapeChange {
-                        start_shape: self.shape_after_transitions.clone(),
-                        end_shape: consonant_shape.unwrap().clone(),
-                        start_nasal_coupling: self.nasal_coupling_after_transitions,
-                        end_nasal_coupling: 0.0
-                    });
-                    delay += 1000;
-                }
-            }
-            for c in final_consonants {
-                let (delay_to_consonant, _delay_to_vowel) = self.add_consonant(delay, c, final_vowel, true);
-                delay += delay_to_consonant;
-            }
             let adjacent_vowel = match new_syllable.initial_vowels.first() {
                 Some(v) => *v,
                 None => new_syllable.main_vowel
@@ -247,6 +203,9 @@ impl Director {
                     delay += delay_to_consonant;
                 }
             }
+
+            // Set the frequency of the new note.
+
             self.add_transition(delay, 0, TransitionData::FrequencyChange {start_frequency: frequency, end_frequency: frequency});
         }
 
@@ -262,7 +221,7 @@ impl Director {
         let shape = self.phonemes.get_vowel_shape(new_syllable.main_vowel).unwrap();
         let nasal_coupling = self.phonemes.get_nasal_coupling(new_syllable.main_vowel);
         let amplification = self.phonemes.get_amplification(new_syllable.main_vowel);
-        let transition_time = if self.current_note.is_some() || new_syllable.initial_vowels.len() > 0 || consonants.len() > 0 {self.vowel_transition_time} else {0};
+        let transition_time = if self.current_note.is_some() || new_syllable.initial_vowels.len() > 0 || new_syllable.initial_consonants.len() > 0 {self.vowel_transition_time} else {0};
         let start_shape = match self.consonants.last() {
             Some(c) => {
                 let consonant_shape = self.phonemes.get_consonant_shape(c, new_syllable.main_vowel);
