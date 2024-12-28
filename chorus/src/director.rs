@@ -169,13 +169,16 @@ impl Director {
         for transition in &self.transitions {
             delay = i64::max(delay, transition.end-self.step);
         }
+        let mut prev_vowel = None;
         if let Some(note) = &self.current_note {
             // Play any final vowels from the previous note.
 
             let current_note_index = note.note_index;
+            prev_vowel = Some(note.syllable.main_vowel);
             for c in &note.syllable.final_vowels.clone() {
                 let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, true);
-                delay = self.add_transient_vowel(delay, *c, vowel_delay, vowel_transition_time);
+                delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time);
+                prev_vowel = Some(*c);
             }
 
             // Smoothly transition between the two notes.
@@ -213,7 +216,8 @@ impl Director {
 
         for c in &new_syllable.initial_vowels {
             let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, false);
-            delay = self.add_transient_vowel(delay, *c, vowel_delay, vowel_transition_time);
+            delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time);
+            prev_vowel = Some(*c);
         }
 
         // Start the main vowel playing.
@@ -222,19 +226,24 @@ impl Director {
         let nasal_coupling = self.phonemes.get_nasal_coupling(new_syllable.main_vowel);
         let amplification = self.phonemes.get_amplification(new_syllable.main_vowel);
         let transition_time = if self.current_note.is_some() || new_syllable.initial_vowels.len() > 0 || new_syllable.initial_consonants.len() > 0 {self.vowel_transition_time} else {0};
-        let start_shape = match self.consonants.last() {
-            Some(c) => {
-                let consonant_shape = self.phonemes.get_consonant_shape(c, new_syllable.main_vowel);
-                if consonant_shape.is_some() {consonant_shape.unwrap().clone()} else {self.shape_after_transitions.clone()}
-            },
-            None => self.shape_after_transitions.clone()
-        };
-        self.add_transition(delay, transition_time, TransitionData::ShapeChange {
-            start_shape: start_shape,
-            end_shape: shape.clone(),
-            start_nasal_coupling: self.nasal_coupling_after_transitions,
-            end_nasal_coupling: nasal_coupling
-        });
+        if prev_vowel.is_some() {
+            self.add_vowel_transition(delay, prev_vowel.unwrap(), new_syllable.main_vowel, self.vowel_transition_time);
+        }
+        else {
+            let start_shape = match self.consonants.last() {
+                Some(c) => {
+                    let consonant_shape = self.phonemes.get_consonant_shape(c, new_syllable.main_vowel);
+                    if new_syllable.initial_vowels.len() == 0 && consonant_shape.is_some() {consonant_shape.unwrap().clone()} else {self.shape_after_transitions.clone()}
+                },
+                None => self.shape_after_transitions.clone()
+            };
+            self.add_transition(delay, transition_time, TransitionData::ShapeChange {
+                start_shape: start_shape,
+                end_shape: shape.clone(),
+                start_nasal_coupling: self.nasal_coupling_after_transitions,
+                end_nasal_coupling: nasal_coupling
+            });
+        }
         self.add_transition(delay, 2000, TransitionData::EnvelopeChange {
             start_envelope: self.envelope_after_transitions,
             end_envelope: amplification
@@ -263,7 +272,7 @@ impl Director {
             final_vowel = Some(note.syllable.main_vowel);
             for c in &note.syllable.final_vowels.clone() {
                 let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, true);
-                delay = self.add_transient_vowel(delay, *c, vowel_delay, vowel_transition_time);
+                delay = self.add_transient_vowel(delay, final_vowel, *c, vowel_delay, vowel_transition_time);
                 final_vowel = Some(*c);
             }
         }
@@ -296,21 +305,54 @@ impl Director {
         self.current_note = None;
     }
 
-    fn add_transient_vowel(&mut self, delay: i64, c: char, vowel_delay: i64, vowel_transition_time: i64) -> i64 {
-        let shape = self.phonemes.get_vowel_shape(c).unwrap();
-        let nasal_coupling = self.phonemes.get_nasal_coupling(c);
+    fn add_transient_vowel(&mut self, delay: i64, prev_vowel: Option<char>, c: char, vowel_delay: i64, vowel_transition_time: i64) -> i64 {
+        if prev_vowel.is_some() {
+            self.add_vowel_transition(delay, prev_vowel.unwrap(), c, vowel_transition_time);
+        }
+        else {
+            let shape = self.phonemes.get_vowel_shape(c).unwrap();
+            let nasal_coupling = self.phonemes.get_nasal_coupling(c);
+            self.add_transition(delay, vowel_transition_time, TransitionData::ShapeChange {
+                start_shape: self.shape_after_transitions.clone(),
+                end_shape: shape.clone(),
+                start_nasal_coupling: self.nasal_coupling_after_transitions,
+                end_nasal_coupling: nasal_coupling
+            });
+        }
         let amplification = self.phonemes.get_amplification(c);
-        self.add_transition(delay, vowel_transition_time, TransitionData::ShapeChange {
-            start_shape: self.shape_after_transitions.clone(),
-            end_shape: shape.clone(),
-            start_nasal_coupling: self.nasal_coupling_after_transitions,
-            end_nasal_coupling: nasal_coupling
-        });
         self.add_transition(delay, vowel_transition_time, TransitionData::EnvelopeChange {
             start_envelope: self.envelope_after_transitions,
             end_envelope: amplification
         });
         delay+vowel_delay+vowel_transition_time
+    }
+
+    fn add_vowel_transition(&mut self, delay: i64, vowel1: char, vowel2: char, vowel_transition_time: i64) {
+        let shape = self.phonemes.get_vowel_shape(vowel2).unwrap().clone();
+        let nasal_coupling = self.phonemes.get_nasal_coupling(vowel2);
+        if let Some(intermediate_shape) = self.phonemes.get_intermediate_shape(vowel1, vowel2) {
+            let intermediate_coupling = 0.5*(self.nasal_coupling_after_transitions+nasal_coupling);
+            self.add_transition(delay, vowel_transition_time/2, TransitionData::ShapeChange {
+                start_shape: self.shape_after_transitions.clone(),
+                end_shape: intermediate_shape.clone(),
+                start_nasal_coupling: self.nasal_coupling_after_transitions,
+                end_nasal_coupling: intermediate_coupling
+            });
+            self.add_transition(delay+vowel_transition_time/2, vowel_transition_time/2, TransitionData::ShapeChange {
+                start_shape: intermediate_shape.clone(),
+                end_shape: shape,
+                start_nasal_coupling: intermediate_coupling,
+                end_nasal_coupling: nasal_coupling
+            });
+        }
+        else {
+            self.add_transition(delay, vowel_transition_time, TransitionData::ShapeChange {
+                start_shape: self.shape_after_transitions.clone(),
+                end_shape: shape,
+                start_nasal_coupling: self.nasal_coupling_after_transitions,
+                end_nasal_coupling: nasal_coupling
+            });
+        }
     }
 
     fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool) -> (i64, i64) {
@@ -326,7 +368,6 @@ impl Director {
         //     filter: ResonantFilter::new(48000, self.consonant_frequency, self.consonant_bandwidth)
         // };
         let mut consonant = self.phonemes.get_consonant(c).unwrap();
-        // let delay = if is_final {delay+2000} else {delay};
         consonant.start = self.step+delay;
         if is_final {
             consonant.volume *= 0.8;
@@ -483,7 +524,6 @@ impl Director {
                     }
                     TransitionData::ShapeChange {start_shape, end_shape, start_nasal_coupling, end_nasal_coupling} => {
                         let coupling = weight1*start_nasal_coupling + weight2*end_nasal_coupling;
-                        let coupling = 8.0*coupling*coupling*coupling*coupling;
                         for voice in &mut self.voices {
                             let n = start_shape.len();
                             let mut shape = vec![0.0; n];
@@ -547,7 +587,7 @@ impl Director {
             if is_final {
                 return (0, 1500);
             }
-            return (3500, 1000);
+            return (1000, 1500);
         }
         if vowel == 'n' {
             if is_final {

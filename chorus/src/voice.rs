@@ -266,6 +266,7 @@ impl Voice {
             if step < self.nasal_off_after_step {
                 // Propagate waves in the nasal cavity.
 
+                let damping = 0.99;
                 let nasal_right = self.nasal.right.clone();
                 let nasal_left = self.nasal.left.clone();
                 let nasal_right_output = &mut self.nasal.right;
