@@ -1,3 +1,4 @@
+use crate::SAMPLE_RATE;
 use std::f32::consts::PI;
 
 pub trait Filter {
@@ -12,9 +13,9 @@ pub struct LowpassFilter {
 }
 
 impl LowpassFilter {
-    pub fn new(sampling_rate: i32, cutoff: f32) -> Self {
+    pub fn new(cutoff: f32) -> Self {
         let rc = 1.0/(2.0*PI*cutoff);
-        let dt = 1.0/sampling_rate as f32;
+        let dt = 1.0/SAMPLE_RATE as f32;
         let alpha = dt/(rc+dt);
         Self {
             alpha: alpha,
@@ -39,9 +40,9 @@ pub struct HighpassFilter {
 }
 
 impl HighpassFilter {
-    pub fn new(sampling_rate: i32, cutoff: f32) -> Self {
+    pub fn new(cutoff: f32) -> Self {
         let rc = 1.0/(2.0*PI*cutoff);
-        let dt = 1.0/sampling_rate as f32;
+        let dt = 1.0/SAMPLE_RATE as f32;
         let alpha = rc/(rc+dt);
         Self {
             alpha: alpha,
@@ -67,10 +68,10 @@ pub struct BandpassFilter {
 }
 
 impl BandpassFilter {
-    pub fn new(sampling_rate: i32, low_cutoff: f32, high_cutoff: f32) -> Self {
+    pub fn new(low_cutoff: f32, high_cutoff: f32) -> Self {
         Self {
-            lowpass: LowpassFilter::new(sampling_rate, low_cutoff),
-            highpass: HighpassFilter::new(sampling_rate, high_cutoff)
+            lowpass: LowpassFilter::new(low_cutoff),
+            highpass: HighpassFilter::new(high_cutoff)
         }
     }
 }
@@ -91,9 +92,9 @@ pub struct ResonantFilter {
 }
 
 impl ResonantFilter {
-    pub fn new(sampling_rate: i32, resonant_frequency: f32, bandwidth: f32) -> Self {
-        let w = 2.0*PI*resonant_frequency/sampling_rate as f32;
-        let r = 1.0 - PI*bandwidth/sampling_rate as f32;
+    pub fn new(resonant_frequency: f32, bandwidth: f32) -> Self {
+        let w = 2.0*PI*resonant_frequency/SAMPLE_RATE as f32;
+        let r = 1.0 - PI*bandwidth/SAMPLE_RATE as f32;
         Self {
             b1: -2.0*r*w.cos(),
             b2: r*r,

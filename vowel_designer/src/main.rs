@@ -1,6 +1,6 @@
 use chorus::VoicePart;
-use chorus::phonemes::Phonemes;
 use chorus::voice::Voice;
+use chorus::SAMPLE_RATE;
 
 use rodio::{OutputStream, Source};
 use midir::MidiInput;
@@ -27,7 +27,7 @@ impl Player {
     fn new() -> Self {
         let voice_part = VoicePart::Bass;
         let mut result = Self {
-            voices: vec![Voice::new(voice_part, 48000)],
+            voices: vec![Voice::new(voice_part)],
             voice_part: voice_part,
             voice_count: 1,
             shape_map: BTreeMap::new(),
@@ -64,8 +64,8 @@ impl Player {
 
     fn rebuild(&mut self) {
         self.voices.clear();
-        for i in 0..self.voice_count {
-            self.voices.push(Voice::new(self.voice_part, 48000));
+        for _i in 0..self.voice_count {
+            self.voices.push(Voice::new(self.voice_part));
         }
         self.shape_map.clear();
         match self.voice_part {
@@ -293,7 +293,7 @@ impl Source for AudioSource {
     }
 
     fn sample_rate(&self) -> u32 {
-        return 48000;
+        return SAMPLE_RATE as u32;
     }
 
     fn total_duration(&self) -> Option<Duration> {
@@ -305,7 +305,7 @@ impl Source for AudioSource {
     }
 }
 
-fn process_midi_message(timestamp: u64, message: &[u8], data: &mut Arc<Mutex<Player>>) {
+fn process_midi_message(_timestamp: u64, message: &[u8], data: &mut Arc<Mutex<Player>>) {
     let mut player = data.lock().unwrap();
     if message[0] == 144 {
         player.current_note = message[1];

@@ -7,6 +7,8 @@ use crate::VoicePart;
 use std::f32::consts::PI;
 use std::sync::mpsc;
 
+/// A message that can be sent to a Director.  Messages roughly correspond to MIDI events:
+/// note on, note off, and various control channels.
 pub enum Message {
     NoteOn {syllable: String, note_index: i32, velocity: f32},
     NoteOff,
@@ -17,18 +19,25 @@ pub enum Message {
     SetConsonants {on_time: i64, off_time: i64, volume: f32, position: usize, frequency: f32, bandwidth: f32}
 }
 
+/// A Transition describes some type of continuous change to the voices.  It specifies the time
+/// interval (in step indices) over which the change takes place.  The details of what is
+/// changing are specified by the TransitionData.
 struct Transition {
     start: i64,
     end: i64,
     data: TransitionData
 }
 
+/// A TransitionData is contained in a Transition.  It specifies what aspect of the voices is
+/// changing, and what values it is changing between.
 enum TransitionData {
     EnvelopeChange {start_envelope: f32, end_envelope: f32},
     ShapeChange {start_shape: Vec<f32>, end_shape: Vec<f32>, start_nasal_coupling: f32, end_nasal_coupling: f32},
     FrequencyChange {start_frequency: f32, end_frequency: f32}
 }
 
+/// A note that is being sung.  It is described by the standard MIDI properties (note index
+/// and velocity), as well as the syllable to sing it on.
 struct Note {
     syllable: Syllable,
     note_index: i32,
@@ -36,6 +45,14 @@ struct Note {
     velocity: f32
 }
 
+/// This is the main class you interact with when synthesizing audio.  A Director controls a set
+/// of Voices, all of the same voice part, that sing in unison.  It handles all details of
+/// pronunciation and expression to make them sing the requested notes and syllables.
+///
+/// When creating a Director with new(), you provide a Receiver<Message> that has been created
+/// with mpsc::channel().  You control it by sending messages from the corresponding Sender.
+/// The only method you call directly on it is generate(), which is used to generate samples.
+/// This design allows control and generation to happen on different threads.
 pub struct Director {
     voices: Vec<Voice>,
     voice_part: VoicePart,
@@ -76,7 +93,7 @@ impl Director {
     pub fn new(voice_part: VoicePart, voice_count: usize, message_receiver: mpsc::Receiver<Message>) -> Self {
         let mut voices = vec![];
         for _i in 0..voice_count {
-            voices.push(Voice::new(voice_part, 48000));
+            voices.push(Voice::new(voice_part));
         }
         let vocal_length;
         let lowest_note;
@@ -142,6 +159,7 @@ impl Director {
         result
     }
 
+    /// Start singing a new note.
     fn note_on(&mut self, syllable: &str, note_index: i32, velocity: f32) -> Result<(), &'static str> {
         // If the note index is outside the range of this voice part, just stop the current
         // note and exit.
@@ -262,11 +280,16 @@ impl Director {
         Ok(())
     }
 
+    /// End the current note.  Because this is a monophonic instrument, note_on() automatically
+    /// ends the current note as well.
     fn note_off(&mut self) {
         let mut delay = 0;
         for transition in &self.transitions {
             delay = i64::max(delay, transition.end-self.step);
         }
+
+        // Play any final vowels.
+
         let mut final_vowel = None;
         if let Some(note) = &self.current_note {
             final_vowel = Some(note.syllable.main_vowel);
@@ -276,7 +299,13 @@ impl Director {
                 final_vowel = Some(*c);
             }
         }
+
+        // Smoothly stop the sound.
+
         self.add_transition(delay, 3000, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: 0.0});
+
+        // Play any final consonants.
+
         let mut consonants = Vec::new();
         if let Some(note) = &self.current_note {
             for c in &note.syllable.final_consonants {
@@ -305,6 +334,8 @@ impl Director {
         self.current_note = None;
     }
 
+    /// Add the Transitions to play a transient vowel (an initial or final vowel that sounds
+    /// only briefly).
     fn add_transient_vowel(&mut self, delay: i64, prev_vowel: Option<char>, c: char, vowel_delay: i64, vowel_transition_time: i64) -> i64 {
         if prev_vowel.is_some() {
             self.add_vowel_transition(delay, prev_vowel.unwrap(), c, vowel_transition_time);
@@ -327,6 +358,7 @@ impl Director {
         delay+vowel_delay+vowel_transition_time
     }
 
+    /// Add the Transitions to smoothly change the vocal tract shape between two vowels.
     fn add_vowel_transition(&mut self, delay: i64, vowel1: char, vowel2: char, vowel_transition_time: i64) {
         let shape = self.phonemes.get_vowel_shape(vowel2).unwrap().clone();
         let nasal_coupling = self.phonemes.get_nasal_coupling(vowel2);
@@ -355,6 +387,8 @@ impl Director {
         }
     }
 
+    /// Play a consonant.  This adds a Consonant to the queue, and if necessary also adds a
+    /// Transition to control the vocal tract shape appropriately.
     fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool) -> (i64, i64) {
         // let mut consonant = Consonant {
         //     sampa: c,
@@ -365,7 +399,7 @@ impl Director {
         //     off_time: self.consonant_off_time,
         //     volume: self.consonant_volume,
         //     position: self.consonant_position,
-        //     filter: ResonantFilter::new(48000, self.consonant_frequency, self.consonant_bandwidth)
+        //     filter: ResonantFilter::new(self.consonant_frequency, self.consonant_bandwidth)
         // };
         let mut consonant = self.phonemes.get_consonant(c).unwrap();
         consonant.start = self.step+delay;
@@ -390,6 +424,7 @@ impl Director {
         (delay_to_consonant, delay_to_vowel)
     }
 
+    /// Add a Transition to the queue.
     fn add_transition(&mut self, delay: i64, duration: i64, data: TransitionData) {
         let transition = Transition { start: self.step+delay, end: self.step+delay+duration, data: data };
         match &transition.data {
@@ -407,11 +442,19 @@ impl Director {
         self.transitions.push(transition);
     }
 
+    /// This is called repeated to generate audio data.  Each generates the two channels
+    /// (left, right) for the next sample.
     pub fn generate(&mut self) -> (f32, f32) {
+        // Deal with the queues of Messages and Transitions.  This only needs to be done occassionally.
+
         if self.step%200 == 0 {
             self.process_messages();
             self.update_transitions();
         }
+
+        // If there has been no glottal excitation and no consonant for a while, we can just
+        // return without doing any work.
+
         self.step += 1;
         if self.envelope > 0.0 || self.consonants.len() != 0 {
             self.off_after_step = self.step+500;
@@ -420,11 +463,20 @@ impl Director {
         let mut right = 0.0;
         if self.step < self.off_after_step {
             let mut consonant_finished = self.consonants.len() > 0;
+
+            // Loop over Voices and generate audio for each one.
+
             for i in 0..self.voices.len() {
+                // If a Consonant is being sung, generate the noise signal for it.
+
                 let mut consonant_noise = 0.0;
                 let mut consonant_position = 0;
                 if self.consonants.len() > 0 {
                     let consonant = &mut self.consonants[0];
+
+                    // Mono consonants are only sung by one voice (the one panned to the center).
+                    // Others are sung by ever voice.
+
                     if !consonant.mono || i == self.voices.len()/2 {
                         let j = self.step-consonant.start-self.consonant_delays[i];
                         if j > 0 {
@@ -447,6 +499,9 @@ impl Director {
                         }
                     }
                 }
+
+                // Generate audio for the voice, injecting the consonant noise if appropriate.
+
                 let signal = self.voices[i].generate(self.step, consonant_noise, consonant_position);
                 left += self.voice_pan[i].cos()*signal;
                 right += self.voice_pan[i].sin()*signal;
@@ -463,6 +518,8 @@ impl Director {
         (0.08*left, 0.08*right)
     }
 
+    /// This is called occasionally by generate().  It processes any Messages that have been
+    /// received since the last call.
     fn process_messages(&mut self) {
         loop {
             match self.message_receiver.try_recv() {
@@ -488,12 +545,14 @@ impl Director {
                             self.update_pan_positions();
                         }
                         Message::SetDelays {vowel_delay, vowel_transition_time, consonant_delay, consonant_transition_time} => {
+                            // This message is only used for develoment.
                             self.vowel_delay = vowel_delay;
                             self.vowel_transition_time = vowel_transition_time;
                             self.consonant_delay = consonant_delay;
                             self.consonant_transition_time = consonant_transition_time;
                         }
                         Message::SetConsonants {on_time, off_time, volume, position, frequency, bandwidth} => {
+                            // This message is only used for develoment.
                             self.consonant_on_time = on_time;
                             self.consonant_off_time = off_time;
                             self.consonant_volume = volume;
@@ -510,6 +569,8 @@ impl Director {
         }
     }
 
+    /// This is called occasionally by generate().  It processes any Transitions in the queue,
+    /// updating the voices as appropriate.
     fn update_transitions(&mut self) {
         for i in 0..self.transitions.len() {
             let transition = &self.transitions[i];
@@ -543,6 +604,8 @@ impl Director {
         self.transitions.retain(|t| self.step < t.end);
     }
 
+    /// Update the volumes of all Voices.  This is called whenever the Director's volume or
+    /// envelope is changed.
     fn update_volume(&mut self) {
         let actual_volume = 0.1+0.9*self.volume;
         for voice in &mut self.voices {
@@ -550,12 +613,16 @@ impl Director {
         }
     }
 
+    /// Update the frequencies of all Voices.  This is called whenever the Director's frequency or
+    /// pitch bend is changed.
     fn update_frequency(&mut self) {
         for voice in &mut self.voices {
             voice.set_frequency(self.frequency*self.bend);
         }
     }
 
+    /// Update Rd and noise amplitude for all voices.  They depend on the volume and the note
+    /// being played.
     fn update_sound(&mut self) {
         let noise = 0.05*(1.0-self.volume)*(1.0-self.volume);
         for voice in &mut self.voices {
@@ -570,6 +637,7 @@ impl Director {
         }
     }
 
+    /// Update the position each voice is panned to.
     fn update_pan_positions(&mut self) {
         let voice_count = self.voices.len();
         if voice_count == 1 {
@@ -582,6 +650,7 @@ impl Director {
         }
     }
 
+    /// Get the timing parameters (delay, transition time) for a transient vowel.
     fn get_vowel_timing(&self, vowel: char, is_final: bool) -> (i64, i64) {
         if vowel == 'm' {
             if is_final {

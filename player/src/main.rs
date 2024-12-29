@@ -1,6 +1,7 @@
 use chorus::director::{Director, Message};
 use chorus::VoicePart;
 use chorus::phonemes::Phonemes;
+use chorus::SAMPLE_RATE;
 
 use rodio::{OutputStream, Source};
 use midir::MidiInput;
@@ -37,7 +38,7 @@ impl Source for Player {
     }
 
     fn sample_rate(&self) -> u32 {
-        return 48000;
+        return SAMPLE_RATE as u32;
     }
 
     fn total_duration(&self) -> Option<Duration> {
@@ -69,7 +70,7 @@ impl MidiController {
     }
 }
 
-fn process_midi_message(timestamp: u64, message: &[u8], data: &mut Arc<Mutex<MidiController>>) {
+fn process_midi_message(_timestamp: u64, message: &[u8], data: &mut Arc<Mutex<MidiController>>) {
     let mut controller = data.lock().unwrap();
     if message[0] == 144 && controller.syllables.len() > 0 {
         let _ = controller.sender.send(Message::NoteOn {syllable: controller.syllables[controller.next_syllable].clone(), note_index: message[1] as i32, velocity: message[2] as f32 / 127.0});

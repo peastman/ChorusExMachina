@@ -2,7 +2,12 @@ use std::f32::consts::PI;
 use crate::random::Random;
 use crate::filter::{Filter, LowpassFilter};
 use crate::VoicePart;
+use crate::SAMPLE_RATE;
 
+/// This implements the glottal excitation of the source-filter model.  It consists of
+/// a Liljencrants-Fant (LF) model plus pulsed noise.  To improve realism, it adds
+/// random fluctuations to several aspects of the output: frequency, amplitude,
+/// vibrato frequency, and vibrato amplitude.
 pub struct Glottis {
     pub frequency: f32,
     pub rd: f32,
@@ -13,7 +18,6 @@ pub struct Glottis {
     pub vibrato_amplitude: f32,
     pub vibrato_frequency_drift_amplitude: f32,
     pub vibrato_amplitude_drift_amplitude: f32,
-    sample_rate: i32,
     phase: f32,
     frequency_drift: f32,
     volume_drift: f32,
@@ -33,7 +37,7 @@ pub struct Glottis {
 }
 
 impl Glottis {
-    pub fn new(sample_rate: i32) -> Self {
+    pub fn new() -> Self {
         let mut random = Random::new();
         Self {
             frequency: 220.0,
@@ -45,7 +49,6 @@ impl Glottis {
             vibrato_amplitude: 0.02,
             vibrato_frequency_drift_amplitude: 0.05,
             vibrato_amplitude_drift_amplitude: 0.3,
-            sample_rate: sample_rate,
             phase: random.get_uniform(),
             frequency_drift: 0.0,
             volume_drift: 0.0,
@@ -53,7 +56,7 @@ impl Glottis {
             vibrato_frequency_drift: 0.0,
             vibrato_amplitude_drift: 0.0,
             random: random,
-            noise_filter: LowpassFilter::new(sample_rate, 2000.0),
+            noise_filter: LowpassFilter::new(2000.0),
             last_rd: 0.0,
             alpha: 0.0,
             epsilon: 0.0,
@@ -75,6 +78,11 @@ impl Glottis {
             self.ta = ra;
             self.tp = 0.5/rg;
             self.te = self.tp*(1.0+rk);
+
+            // According to the LF model, we're supposed to iteratively solve nonlinear equations
+            // to determine alpha and epsilon.  That is slow.  The following approximations are
+            // very fast and produce good results.
+
             self.epsilon = 1.0/self.ta;
             self.alpha = 8.08*(-1.07*self.rd).exp();
             self.e0 = 1.0/((self.alpha*self.te).exp()*(PI*self.te/self.tp).sin());
@@ -97,10 +105,10 @@ impl Glottis {
 
         let vibrato_freq = self.vibrato_frequency * (1.0+self.vibrato_frequency_drift_amplitude*self.vibrato_frequency_drift);
         let vibrato_amplitude = self.vibrato_amplitude * (1.0+self.vibrato_amplitude_drift_amplitude*self.vibrato_amplitude_drift);
-        let vibrato_offset = vibrato_freq / self.sample_rate as f32;
+        let vibrato_offset = vibrato_freq / SAMPLE_RATE as f32;
         self.vibrato_phase = (self.vibrato_phase+vibrato_offset) % 1.0;
         let freq = self.frequency * (1.0+self.frequency_drift_amplitude*self.frequency_drift) * (1.0+vibrato_amplitude*((2.0*PI*self.vibrato_phase).sin()));
-        let offset = freq / self.sample_rate as f32;
+        let offset = freq / SAMPLE_RATE as f32;
         self.phase = (self.phase+offset) % 1.0;
         let t = self.phase;
 
@@ -120,6 +128,8 @@ impl Glottis {
     }
 }
 
+/// A 1D waveguide along which an audio signal can propagate.  A Voice uses two of these,
+/// one for the vocal tract and one for the nasal cavity.
 pub struct Waveguide {
     area: Vec<f32>,
     k: Vec<f32>,
@@ -139,11 +149,14 @@ impl Waveguide {
         waveguide
     }
 
+    /// Set the shape of the waveguide, specified as the area of each segment.
     pub fn set_shape(&mut self, shape: &Vec<f32>) {
         self.area = shape.to_vec();
         self.compute_reflections();
     }
 
+    /// Compute the reflection coefficients for the segments.  This is called automatically
+    /// whenever the shape changes.
     pub fn compute_reflections(&mut self) {
         let n = self.k.len();
         for i in 0..n-1 {
@@ -160,6 +173,9 @@ impl Waveguide {
     }
 }
 
+/// This struct combines a glottal source and two waveguides to form the complete synthesis model.
+/// In addition, consonants can be synthesized by injecting extra noise at an arbitrary point in
+/// the vocal tract.
 pub struct Voice {
     glottis: Glottis,
     vocal: Waveguide,
@@ -171,7 +187,7 @@ pub struct Voice {
 }
 
 impl Voice {
-    pub fn new(voice_part: VoicePart, sample_rate: i32) -> Self {
+    pub fn new(voice_part: VoicePart) -> Self {
         let vocal_length;
         let coupling_position;
         let vibrato_frequency;
@@ -203,7 +219,7 @@ impl Voice {
             }
         }
         let mut voice = Voice {
-            glottis: Glottis::new(sample_rate),
+            glottis: Glottis::new(),
             vocal: Waveguide::new(vocal_length),
             nasal: Waveguide::new(nasal_shape.len()),
             volume: 1.0,
@@ -216,27 +232,40 @@ impl Voice {
         voice
     }
 
+    /// Set the volume of the glottal excitation (between 0.0 and 1.0).
     pub fn set_volume(&mut self, volume: f32) {
         self.volume = volume;
     }
 
+    /// Set the shape of the vocal tract, specified as a vector of cross-sectional areas
+    /// for each segment.  Also specified is the degree of coupling between the vocal
+    /// tract and nasal cavity.  This should be 0.5 for nasal sounds like m and n, 0.0
+    /// for most others.
     pub fn set_vocal_shape(&mut self, shape: &Vec<f32>, nasal_coupling: f32) {
         self.vocal.set_shape(shape);
         self.nasal_coupling = nasal_coupling;
     }
 
+    /// Set the frequency of the glottal excitation (in Hz).
     pub fn set_frequency(&mut self, frequency: f32) {
         self.glottis.frequency = frequency;
     }
 
+    /// Set the Rd parameter for the LF model.  This controls the overall intensity of the sound.
+    /// Typical values are in the range of about 1.0 to 2.5.  Lower values produce a pressed
+    /// sound, while higher values produce a more relaxed sound.
     pub fn set_rd(&mut self, rd: f32) {
         self.glottis.rd = rd;
     }
 
+    /// Set the amplitude of the glottal noise.  Larger values produce a more breathy sound.
     pub fn set_noise(&mut self, noise: f32) {
         self.glottis.noise = noise;
     }
 
+    /// Generate the next audio sample.  Arguments are the current sample index, the noise signal
+    /// to inject into the vocal tract (to simulate consonants), and the position at which to
+    /// inject it.
     pub fn generate(&mut self, step: i64, noise: f32, noise_position: usize) -> f32 {
         if self.vocal.area[noise_position] > 0.0 {
             self.vocal.right[noise_position] += noise;

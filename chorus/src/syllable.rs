@@ -1,6 +1,15 @@
 const VOWELS: &str = "aeilmnouyAEINOUVY2369&{@";
 const CONSONANTS: &str = "bdfghkprstvxzDSTZʤʧ";
 
+/// A Syllable consists of:
+///
+/// - zero or more initial consonants
+/// - zero or more initial vowels
+/// - a single main vowel
+/// - zero or more final vowels
+/// - zero or final consonants
+///
+/// Syllables are created by calling Syllable::build(), which parses an X-SAMPA description.
 pub struct Syllable {
     pub initial_consonants: Vec<char>,
     pub initial_vowels: Vec<char>,
