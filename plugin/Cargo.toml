@@ -11,6 +11,7 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 chorus = { path = "../chorus" }
 nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = ["standalone"] }
+nih_plug_egui = { git = "https://github.com/robbert-vdh/nih-plug.git" }
 
 [profile.release]
 lto = "thin"

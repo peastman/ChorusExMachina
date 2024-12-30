@@ -10,10 +10,12 @@ use std::sync::mpsc;
 /// A message that can be sent to a Director.  Messages roughly correspond to MIDI events:
 /// note on, note off, and various control channels.
 pub enum Message {
+    Reinitialize {voice_part: VoicePart, voice_count: usize},
     NoteOn {syllable: String, note_index: i32, velocity: f32},
     NoteOff,
     SetVolume {volume: f32},
     SetPitchBend {semitones: f32},
+    SetVibrato {vibrato: f32},
     SetStereoWidth {width: f32},
     SetDelays {vowel_delay: i64, vowel_transition_time: i64, consonant_delay: i64, consonant_transition_time: i64},
     SetConsonants {on_time: i64, off_time: i64, volume: f32, position: usize, frequency: f32, bandwidth: f32}
@@ -69,6 +71,7 @@ pub struct Director {
     envelope: f32,
     frequency: f32,
     bend: f32,
+    vibrato: f32,
     off_after_step: i64,
     shape_after_transitions: Vec<f32>,
     nasal_coupling_after_transitions: f32,
@@ -91,59 +94,31 @@ pub struct Director {
 
 impl Director {
     pub fn new(voice_part: VoicePart, voice_count: usize, message_receiver: mpsc::Receiver<Message>) -> Self {
-        let mut voices = vec![];
-        for _i in 0..voice_count {
-            voices.push(Voice::new(voice_part));
-        }
-        let vocal_length;
-        let lowest_note;
-        let highest_note;
-        match voice_part {
-            VoicePart::Soprano => {
-                vocal_length = 42;
-                lowest_note = 57;
-                highest_note = 88;
-            }
-            VoicePart::Alto => {
-                vocal_length = 45;
-                lowest_note = 48;
-                highest_note = 79;
-            }
-            VoicePart::Tenor => {
-                vocal_length = 48;
-                lowest_note = 43;
-                highest_note = 72;
-            }
-            VoicePart::Bass => {
-                vocal_length = 50;
-                lowest_note = 36;
-                highest_note = 67;
-            }
-        }
         let mut result = Self {
-            voices: voices,
+            voices: vec![],
             voice_part: voice_part.clone(),
-            lowest_note: lowest_note,
-            highest_note: highest_note,
+            lowest_note: 0,
+            highest_note: 0,
             phonemes: Phonemes::new(voice_part),
             random: Random::new(),
             step: 0,
             transitions: vec![],
             current_note: None,
             consonants: vec![],
-            consonant_delays: vec![0; voice_count],
+            consonant_delays: vec![],
             volume: 1.0,
             envelope: 0.0,
             frequency: 1.0,
             bend: 1.0,
+            vibrato: 0.4,
             off_after_step: 0,
-            shape_after_transitions: vec![0.0; vocal_length],
+            shape_after_transitions: vec![],
             nasal_coupling_after_transitions: 0.0,
             envelope_after_transitions: 0.0,
             frequency_after_transitions: 0.0,
             message_receiver: message_receiver,
             stereo_width: 0.3,
-            voice_pan: vec![0.0; voice_count],
+            voice_pan: vec![],
             vowel_delay: 0,
             vowel_transition_time: 3300,
             consonant_delay: 3000,
@@ -155,8 +130,53 @@ impl Director {
             consonant_frequency: 2000.0,
             consonant_bandwidth: 3000.0
         };
-        result.update_pan_positions();
+        result.initialize_voices(voice_part, voice_count);
         result
+    }
+
+    fn initialize_voices(&mut self, voice_part: VoicePart, voice_count: usize) {
+        self.voice_part = voice_part.clone();
+        self.voices.clear();
+        for _i in 0..voice_count {
+            self.voices.push(Voice::new(voice_part));
+        }
+        self.phonemes = Phonemes::new(voice_part);
+        self.transitions.clear();
+        self.current_note = None;
+        self.consonants.clear();
+        self.consonant_delays = vec![0; voice_count];
+        self.voice_pan = vec![0.0; voice_count];
+        self.envelope = 0.0;
+        self.bend = 1.0;
+        self.nasal_coupling_after_transitions = 0.0;
+        self.envelope_after_transitions = 0.0;
+        self.frequency_after_transitions = 0.0;
+        let vocal_length;
+        match voice_part {
+            VoicePart::Soprano => {
+                vocal_length = 42;
+                self.lowest_note = 57;
+                self.highest_note = 88;
+            }
+            VoicePart::Alto => {
+                vocal_length = 45;
+                self.lowest_note = 48;
+                self.highest_note = 79;
+            }
+            VoicePart::Tenor => {
+                vocal_length = 48;
+                self.lowest_note = 43;
+                self.highest_note = 72;
+            }
+            VoicePart::Bass => {
+                vocal_length = 50;
+                self.lowest_note = 36;
+                self.highest_note = 67;
+            }
+        }
+        self.shape_after_transitions = vec![0.0; vocal_length];
+        self.update_pan_positions();
+        self.update_vibrato();
     }
 
     /// Start singing a new note.
@@ -525,6 +545,9 @@ impl Director {
             match self.message_receiver.try_recv() {
                 Ok(message) => {
                     match message {
+                        Message::Reinitialize {voice_part, voice_count} => {
+                            self.initialize_voices(voice_part, voice_count);
+                        }
                         Message::NoteOn {syllable, note_index, velocity} => {
                             let _ = self.note_on(&syllable, note_index, velocity);
                         }
@@ -539,6 +562,10 @@ impl Director {
                         Message::SetPitchBend {semitones} => {
                             self.bend = f32::powf(2.0, semitones as f32/12.0);
                             self.update_frequency();
+                        }
+                        Message::SetVibrato {vibrato} => {
+                            self.vibrato = vibrato;
+                            self.update_vibrato();
                         }
                         Message::SetStereoWidth {width} => {
                             self.stereo_width = width;
@@ -618,6 +645,14 @@ impl Director {
     fn update_frequency(&mut self) {
         for voice in &mut self.voices {
             voice.set_frequency(self.frequency*self.bend);
+        }
+    }
+
+    /// Update the vibrato of all Voices.  This is called whenever the Director's vibrato is changed.
+    fn update_vibrato(&mut self) {
+        let amplitude = 0.04*(self.vibrato+0.1);
+        for voice in &mut self.voices {
+            voice.set_vibrato_amplitude(amplitude);
         }
     }
 

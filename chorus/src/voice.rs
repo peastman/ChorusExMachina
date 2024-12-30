@@ -263,6 +263,11 @@ impl Voice {
         self.glottis.noise = noise;
     }
 
+    /// Set the amplitude of vibrato.
+    pub fn set_vibrato_amplitude(&mut self, amplitude: f32) {
+        self.glottis.vibrato_amplitude = amplitude;
+    }
+
     /// Generate the next audio sample.  Arguments are the current sample index, the noise signal
     /// to inject into the vocal tract (to simulate consonants), and the position at which to
     /// inject it.
