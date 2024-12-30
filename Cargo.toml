@@ -2,5 +2,7 @@
 
 members = [
     "chorus",
+    "plugin",
+    "xtask",
     "player",
     "vowel_designer"]

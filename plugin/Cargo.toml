@@ -1,0 +1,22 @@
+[package]
+name = "chorus_ex_machina"
+version = "0.1.0"
+edition = "2021"
+homepage = "https://github.com/peastman/ChorusExMachina"
+description = "A physically modelled chorus synthesizer"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+chorus = { path = "../chorus" }
+nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = ["standalone"] }
+
+[profile.release]
+lto = "thin"
+strip = "symbols"
+
+[profile.profiling]
+inherits = "release"
+debug = true
+strip = "none"
