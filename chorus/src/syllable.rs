@@ -1,5 +1,5 @@
 const VOWELS: &str = "aeilmnouyAEINOUVY2369&{@";
-const CONSONANTS: &str = "bdfghkprstvxzDSTZʤʧ";
+const CONSONANTS: &str = "bdfghkprstvxzDSTZ4ʤʧ";
 
 /// A Syllable consists of:
 ///
@@ -22,7 +22,7 @@ impl Syllable {
     pub fn build(sampa: &str) -> Result<Syllable, &'static str> {
         // First split the string into initial consonants, vowels, and final consonants.
 
-        let sampa = sampa.replace("tS", "ʧ").replace("dZ", "ʤ");
+        let sampa = sampa.replace("tS", "ʧ").replace("dZ", "ʤ").replace("r", "4r");
         let mut initial_consonants: Vec<char> = Vec::new();
         let mut vowels: Vec<char> = Vec::new();
         let mut final_consonants: Vec<char> = Vec::new();

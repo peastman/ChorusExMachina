@@ -373,7 +373,7 @@ impl Director {
                 end_nasal_coupling: nasal_coupling
             });
         }
-        let amplification = self.phonemes.get_amplification(c);
+        let amplification = 0.7*self.phonemes.get_amplification(c);
         self.add_transition(delay, vowel_transition_time, TransitionData::EnvelopeChange {
             start_envelope: self.envelope_after_transitions,
             end_envelope: amplification
@@ -422,7 +422,8 @@ impl Director {
         //     off_time: self.consonant_off_time,
         //     volume: self.consonant_volume,
         //     position: self.consonant_position,
-        //     filter: ResonantFilter::new(self.consonant_frequency, self.consonant_bandwidth)
+        //     filter: ResonantFilter::new(self.consonant_frequency, self.consonant_bandwidth),
+        //     mono: false
         // };
         let mut consonant = self.phonemes.get_consonant(c).unwrap();
         consonant.start = self.step+delay;
