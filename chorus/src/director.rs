@@ -16,6 +16,7 @@ pub enum Message {
     SetVolume {volume: f32},
     SetPitchBend {semitones: f32},
     SetVibrato {vibrato: f32},
+    SetIntensity {intensity: f32},
     SetStereoWidth {width: f32},
     SetDelays {vowel_delay: i64, vowel_transition_time: i64, consonant_delay: i64, consonant_transition_time: i64},
     SetConsonants {on_time: i64, off_time: i64, volume: f32, position: usize, frequency: f32, bandwidth: f32}
@@ -72,6 +73,7 @@ pub struct Director {
     frequency: f32,
     bend: f32,
     vibrato: f32,
+    intensity: f32,
     off_after_step: i64,
     shape_after_transitions: Vec<f32>,
     nasal_coupling_after_transitions: f32,
@@ -111,6 +113,7 @@ impl Director {
             frequency: 1.0,
             bend: 1.0,
             vibrato: 0.4,
+            intensity: 0.5,
             off_after_step: 0,
             shape_after_transitions: vec![],
             nasal_coupling_after_transitions: 0.0,
@@ -567,6 +570,10 @@ impl Director {
                             self.vibrato = vibrato;
                             self.update_vibrato();
                         }
+                        Message::SetIntensity {intensity} => {
+                            self.intensity = intensity;
+                            self.update_sound();
+                        }
                         Message::SetStereoWidth {width} => {
                             self.stereo_width = width;
                             self.update_pan_positions();
@@ -665,7 +672,7 @@ impl Director {
         }
         if let Some(note) = &self.current_note {
             let x = (self.highest_note-note.note_index) as f32 / (self.highest_note-self.lowest_note) as f32;
-            let rd = 1.4 + 0.4*x + 0.2*self.volume;
+            let rd = 1.6 + 0.4*x - 0.2*self.volume - (self.intensity-0.5);
             for voice in &mut self.voices {
                 voice.set_rd(rd);
             }

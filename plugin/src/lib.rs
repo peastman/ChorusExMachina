@@ -10,16 +10,21 @@ pub struct ChorusExMachina {
     params: Arc<ChorusExMachinaParams>,
     director: Arc<Mutex<Director>>,
     sender: Arc<Mutex<mpsc::Sender<Message>>>,
+    editor_state: Arc<Mutex<editor::UIState>>,
     last_note: u8,
     last_dynamics: f32,
     last_vibrato: f32,
-    last_stereo_width: f32
+    last_intensity: f32,
+    last_stereo_width: f32,
+    next_syllable_index: usize
 }
 
 #[derive(Params)]
 struct ChorusExMachinaParams {
     #[persist = "editor_state"]
     editor_state: Arc<EguiState>,
+    // #[persist = "phrases"]
+    pub phrases: Mutex<[String; 128]>,
     #[id = "voice_part"]
     pub voice_part: EnumParam<VoicePart>,
     #[id = "voice_count"]
@@ -28,8 +33,12 @@ struct ChorusExMachinaParams {
     pub dynamics: FloatParam,
     #[id = "vibrato"]
     pub vibrato: FloatParam,
+    #[id = "intensity"]
+    pub intensity: FloatParam,
     #[id = "stereo_width"]
     pub stereo_width: FloatParam,
+    #[id = "selected_phrase"]
+    pub selected_phrase: IntParam
 }
 
 #[derive(Copy, Clone, Enum, Debug, PartialEq)]
@@ -51,10 +60,13 @@ impl Default for ChorusExMachina {
             params: Arc::new(ChorusExMachinaParams::default()),
             director: Arc::new(Mutex::new(Director::new(chorus::VoicePart::Soprano, 1, receiver))),
             sender: Arc::new(Mutex::new(sender)),
+            editor_state: Arc::new(Mutex::new(editor::UIState::new())),
             last_note: 255,
             last_dynamics: -1.0,
             last_vibrato: -1.0,
-            last_stereo_width: -1.0
+            last_intensity: -1.0,
+            last_stereo_width: -1.0,
+            next_syllable_index: 0
         }
     }
 }
@@ -63,11 +75,14 @@ impl Default for ChorusExMachinaParams {
     fn default() -> Self {
         Self {
             editor_state: EguiState::from_size(600, 400),
+            phrases: Mutex::new(core::array::from_fn(|i| if i == 0 {"A".to_string()} else {"".to_string()})),
             voice_part: EnumParam::new("Voice Part", VoicePart::Soprano).non_automatable(),
             voice_count: IntParam::new("Voices", 4, IntRange::Linear {min: 1, max: 8}).non_automatable(),
             dynamics: FloatParam::new("Dynamics", 1.0, FloatRange::Linear {min: 0.0, max: 1.0}),
             vibrato: FloatParam::new("Vibrato", 0.4, FloatRange::Linear {min: 0.0, max: 1.0}),
-            stereo_width: FloatParam::new("Stereo Width", 0.3, FloatRange::Linear {min: 0.0, max: 1.0})
+            intensity: FloatParam::new("Intensity", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
+            stereo_width: FloatParam::new("Stereo Width", 0.3, FloatRange::Linear {min: 0.0, max: 1.0}),
+            selected_phrase: IntParam::new("Selected Phrase", 0, IntRange::Linear {min: 0, max: 127})
         }
     }
 }
@@ -127,6 +142,10 @@ impl Plugin for ChorusExMachina {
             self.last_vibrato = self.params.vibrato.value();
             let _ = sender.send(Message::SetVibrato {vibrato: self.last_vibrato});
         }
+        if self.last_intensity != self.params.intensity.value() {
+            self.last_intensity = self.params.intensity.value();
+            let _ = sender.send(Message::SetIntensity {intensity: self.last_intensity});
+        }
         if self.last_stereo_width != self.params.stereo_width.value() {
             self.last_stereo_width = self.params.stereo_width.value();
             let _ = sender.send(Message::SetStereoWidth {width: self.last_stereo_width});
@@ -138,8 +157,16 @@ impl Plugin for ChorusExMachina {
                 }
                 match event {
                     NoteEvent::NoteOn { note, velocity, .. } => {
-                        let _ = sender.send(Message::NoteOn {syllable: "A".to_string(), note_index: note as i32, velocity: velocity});
-                        self.last_note = note;
+                        let phrase = self.params.phrases.lock().unwrap()[self.params.selected_phrase.value() as usize].clone();
+                        let syllables: Vec<&str> = phrase.split_whitespace().collect();
+                        if self.next_syllable_index >= syllables.len() {
+                            self.next_syllable_index = 0;
+                        }
+                        if syllables.len() > 0 {
+                            let _ = sender.send(Message::NoteOn {syllable: syllables[self.next_syllable_index].to_string(), note_index: note as i32, velocity: velocity});
+                            self.last_note = note;
+                            self.next_syllable_index = (self.next_syllable_index+1)%syllables.len();
+                        }
                     },
                     NoteEvent::NoteOff { note, .. } => {
                         if note == self.last_note {
@@ -169,9 +196,10 @@ impl Plugin for ChorusExMachina {
     }
 
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
-        let params = self.params.clone();
+        let params = Arc::clone(&self.params);
         let sender = Arc::clone(&self.sender);
-        editor::draw_editor(params, sender)
+        let state = Arc::clone(&self.editor_state);
+        editor::draw_editor(params, sender, state)
     }
 }
 
