@@ -3,6 +3,7 @@ use chorus::director::Message;
 use nih_plug::prelude::*;
 use nih_plug_egui::{create_egui_editor, egui};
 use egui_extras::{Column, TableBuilder};
+use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
 use std::sync::{Arc, Mutex, mpsc};
 
 #[derive(PartialEq)]
@@ -147,7 +148,20 @@ fn draw_words_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, send
 }
 
 fn draw_help_panel(ui: &mut egui::Ui) {
+    let mut cache = CommonMarkCache::default();
+    let text = include_str!("help.md");
+    egui::ScrollArea::vertical().show(ui, |ui| {
+        CommonMarkViewer::new("help").show(ui, &mut cache, text);
+    });
 }
 
 fn draw_about_panel(ui: &mut egui::Ui) {
+    ui.vertical_centered(|ui| {
+        ui.add_space(30.0);
+        ui.label(egui::RichText::new("Chorus Ex Machina").size(36.0).italics());
+        ui.label(egui::RichText::new(format!("version {}", env!("CARGO_PKG_VERSION"))).size(14.0));
+        ui.label(egui::RichText::new("Copyright 2025 by Peter Eastman").size(14.0));
+        ui.add_space(12.0);
+        ui.hyperlink("https://github.com/peastman/ChorusExMachina");
+    });
 }

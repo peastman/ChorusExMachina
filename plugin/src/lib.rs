@@ -23,8 +23,8 @@ pub struct ChorusExMachina {
 struct ChorusExMachinaParams {
     #[persist = "editor_state"]
     editor_state: Arc<EguiState>,
-    // #[persist = "phrases"]
-    pub phrases: Mutex<[String; 128]>,
+    #[persist = "phrases"]
+    pub phrases: Mutex<Vec<String>>,
     #[id = "voice_part"]
     pub voice_part: EnumParam<VoicePart>,
     #[id = "voice_count"]
@@ -73,9 +73,9 @@ impl Default for ChorusExMachina {
 
 impl Default for ChorusExMachinaParams {
     fn default() -> Self {
-        Self {
+        let result = Self {
             editor_state: EguiState::from_size(600, 400),
-            phrases: Mutex::new(core::array::from_fn(|i| if i == 0 {"A".to_string()} else {"".to_string()})),
+            phrases: Mutex::new(vec!["".to_string(); 128]),
             voice_part: EnumParam::new("Voice Part", VoicePart::Soprano).non_automatable(),
             voice_count: IntParam::new("Voices", 4, IntRange::Linear {min: 1, max: 8}).non_automatable(),
             dynamics: FloatParam::new("Dynamics", 1.0, FloatRange::Linear {min: 0.0, max: 1.0}),
@@ -83,7 +83,9 @@ impl Default for ChorusExMachinaParams {
             intensity: FloatParam::new("Intensity", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
             stereo_width: FloatParam::new("Stereo Width", 0.3, FloatRange::Linear {min: 0.0, max: 1.0}),
             selected_phrase: IntParam::new("Selected Phrase", 0, IntRange::Linear {min: 0, max: 127})
-        }
+        };
+        result.phrases.lock().unwrap()[0] = "A".to_string();
+        result
     }
 }
 
