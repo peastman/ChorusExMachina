@@ -1,5 +1,5 @@
-const VOWELS: &str = "aeilmnouyAEINOUVY2369&{@";
-const CONSONANTS: &str = "bdfghkprstvxzDSTZ4ʤʧ";
+const VOWELS: &str = "aeilmnouyAEINOUVY239&{@";
+const CONSONANTS: &str = "bdfghjkprstvxzDSTZ4ʤʧ";
 
 /// A Syllable consists of:
 ///

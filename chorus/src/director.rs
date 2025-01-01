@@ -433,6 +433,9 @@ impl Director {
         }
         let delay_to_consonant = consonant.delay+consonant.on_time+consonant.off_time;
         let delay_to_vowel = consonant.delay+consonant.transition_time;
+        if !consonant.mono {
+            consonant.volume /= (self.voices.len() as f32).sqrt();
+        }
         self.consonants.push(consonant);
         if let Some(vowel) = adjacent_vowel {
             let start_shape = self.phonemes.get_consonant_shape(&consonant, vowel).unwrap();
