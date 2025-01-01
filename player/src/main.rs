@@ -91,6 +91,8 @@ fn process_midi_message(_timestamp: u64, message: &[u8], data: &mut Arc<Mutex<Mi
 
 struct MainGui {
     controller_ref: Arc<Mutex<MidiController>>,
+    voice_part: VoicePart,
+    voice_count: usize,
     vowel_delay: i64,
     vowel_transition_time: i64,
     consonant_delay: i64,
@@ -114,7 +116,7 @@ impl App for MainGui {
                     controller.syllables = controller.phrase.split_whitespace().map(str::to_string).collect();
                     controller.next_syllable = 0;
                     if controller.phrase.len() > 0 {
-                        let phonemes = Phonemes::new(VoicePart::Alto);
+                        let phonemes = Phonemes::new(self.voice_part);
                         let cons = controller.phrase.chars().next().unwrap();
                         if let Some(c) = phonemes.get_consonant(cons) {
                             self.consonant_delay = c.delay;
@@ -128,6 +130,23 @@ impl App for MainGui {
                     }
                 }
             });
+            let old_part = self.voice_part;
+            let old_voices = self.voice_count;
+            ui.horizontal(|ui| {
+                egui::ComboBox::from_label("Voice Part")
+                    .selected_text(format!("{:?}", self.voice_part))
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut self.voice_part, VoicePart::Soprano, "Soprano");
+                        ui.selectable_value(&mut self.voice_part, VoicePart::Alto, "Alto");
+                        ui.selectable_value(&mut self.voice_part, VoicePart::Tenor, "Tenor");
+                        ui.selectable_value(&mut self.voice_part, VoicePart::Bass, "Bass");
+                    });
+                ui.add_space(10.0);
+                ui.add(egui::Slider::new(&mut self.voice_count, 1..=8).text("Voices"))
+            });
+            if old_part != self.voice_part || old_voices != self.voice_count {
+                let _ = controller.sender.send(Message::Reinitialize {voice_part: self.voice_part, voice_count: self.voice_count});
+            }
             if ui.add(egui::Slider::new(&mut self.vowel_delay, 0..=10000).text("Vowel Delay")).dragged() {
                 let _ = controller.sender.send(Message::SetDelays {vowel_delay: self.vowel_delay, vowel_transition_time: self.vowel_transition_time, consonant_delay: self.consonant_delay, consonant_transition_time: self.consonant_transition_time});
             }
@@ -178,6 +197,8 @@ fn main() -> Result<(), eframe::Error> {
     let options = NativeOptions::default();
     let gui = MainGui {
         controller_ref: Arc::clone(&controller),
+        voice_part: VoicePart::Alto,
+        voice_count: 4,
         vowel_delay: 0,
         vowel_transition_time: 2000,
         consonant_delay: 3000,
@@ -188,7 +209,7 @@ fn main() -> Result<(), eframe::Error> {
         consonant_position: 40,
         consonant_frequency: 2000.0,
         consonant_bandwidth: 3000.0
-};
+    };
     eframe::run_native(
         "Chorus",
         options,
