@@ -263,6 +263,16 @@ impl Voice {
         self.glottis.noise = noise;
     }
 
+    /// Get the frequency of vibrato.
+    pub fn get_vibrato_frequency(&self) -> f32 {
+        self.glottis.vibrato_frequency
+    }
+
+    /// Set the frequency of vibrato.
+    pub fn set_vibrato_frequency(&mut self, frequency: f32) {
+        self.glottis.vibrato_frequency = frequency;
+    }
+
     /// Set the amplitude of vibrato.
     pub fn set_vibrato_amplitude(&mut self, amplitude: f32) {
         self.glottis.vibrato_amplitude = amplitude;
