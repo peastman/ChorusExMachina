@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex, mpsc};
 #[derive(PartialEq)]
 enum Panel {
     Controls,
-    Words,
+    Text,
     Help,
     About
 }
@@ -36,7 +36,7 @@ pub fn draw_editor(params: Arc<ChorusExMachinaParams>, sender: Arc<Mutex<mpsc::S
                 egui::SidePanel::left("tabs").show_inside(ui, |ui| {
                     let mut state = state.lock().unwrap();
                     ui.selectable_value(&mut state.current_panel, Panel::Controls, "Controls");
-                    ui.selectable_value(&mut state.current_panel, Panel::Words, "Words");
+                    ui.selectable_value(&mut state.current_panel, Panel::Text, "Text");
                     ui.selectable_value(&mut state.current_panel, Panel::Help, "Help");
                     ui.selectable_value(&mut state.current_panel, Panel::About, "About");
                 });
@@ -44,7 +44,7 @@ pub fn draw_editor(params: Arc<ChorusExMachinaParams>, sender: Arc<Mutex<mpsc::S
                     let state = state.lock().unwrap();
                     match state.current_panel {
                         Panel::Controls => draw_controls_panel(ui, &params, &sender, setter),
-                        Panel::Words => draw_words_panel(ui, &params, &sender, setter),
+                        Panel::Text => draw_text_panel(ui, &params, &sender, setter),
                         Panel::Help => draw_help_panel(ui),
                         Panel::About => draw_about_panel(ui)
                     }
@@ -57,6 +57,8 @@ pub fn draw_editor(params: Arc<ChorusExMachinaParams>, sender: Arc<Mutex<mpsc::S
 fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, sender: &Arc<Mutex<mpsc::Sender<Message>>>, setter: &ParamSetter) {
     let mut new_voice_part = params.voice_part.value();
     let mut new_voice_count = params.voice_count.value();
+    ui.label(egui::RichText::new("The voices in the chorus").italics());
+    ui.add_space(5.0);
     ui.horizontal(|ui| {
         ui.label("Voice Part");
         egui::ComboBox::from_id_source("Voice Part").selected_text(format!("{:?}", new_voice_part)).show_ui(ui, |ui| {
@@ -84,6 +86,9 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
         };
         let _ = sender.lock().unwrap().send(Message::Reinitialize {voice_part: voice_part, voice_count: new_voice_count as usize});
     };
+    ui.add_space(20.0);
+    ui.label(egui::RichText::new("These controls can be mapped to MIDI CCs and automated in a DAW").italics());
+    ui.add_space(5.0);
     egui::Grid::new("sliders").show(ui, |ui| {
         draw_param_slider(ui, &params.dynamics, setter);
         draw_param_slider(ui, &params.vibrato, setter);
@@ -106,7 +111,7 @@ fn draw_param_slider(ui: &mut egui::Ui, param: &FloatParam, setter: &ParamSetter
     changed
 }
 
-fn draw_words_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, sender: &Arc<Mutex<mpsc::Sender<Message>>>, setter: &ParamSetter) {
+fn draw_text_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, sender: &Arc<Mutex<mpsc::Sender<Message>>>, setter: &ParamSetter) {
     let table = TableBuilder::new(ui)
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
         .column(Column::auto())
