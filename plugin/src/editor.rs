@@ -15,13 +15,15 @@ enum Panel {
 }
 
 pub struct UIState {
-    current_panel: Panel
+    current_panel: Panel,
+    edit_phrase: usize
 }
 
 impl UIState {
     pub fn new() -> Self {
         Self {
-            current_panel: Panel::Controls
+            current_panel: Panel::Controls,
+            edit_phrase: 0
         }
     }
 }
@@ -41,10 +43,10 @@ pub fn draw_editor(params: Arc<ChorusExMachinaParams>, sender: Arc<Mutex<mpsc::S
                     ui.selectable_value(&mut state.current_panel, Panel::About, "About");
                 });
                 egui::CentralPanel::default().show_inside(ui, |ui| {
-                    let state = state.lock().unwrap();
+                    let mut state = state.lock().unwrap();
                     match state.current_panel {
                         Panel::Controls => draw_controls_panel(ui, &params, &sender, setter),
-                        Panel::Text => draw_text_panel(ui, &params, &sender, setter),
+                        Panel::Text => draw_text_panel(ui, &params, setter, &mut state),
                         Panel::Help => draw_help_panel(ui),
                         Panel::About => draw_about_panel(ui)
                     }
@@ -111,7 +113,7 @@ fn draw_param_slider(ui: &mut egui::Ui, param: &FloatParam, setter: &ParamSetter
     changed
 }
 
-fn draw_text_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, sender: &Arc<Mutex<mpsc::Sender<Message>>>, setter: &ParamSetter) {
+fn draw_text_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, setter: &ParamSetter, state: &mut UIState) {
     let table = TableBuilder::new(ui)
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
         .column(Column::auto())
@@ -129,6 +131,7 @@ fn draw_text_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, sende
             let mut phrases = params.phrases.lock().unwrap();
             let row_index = row.index();
             let selected_phrase = params.selected_phrase.value() as usize;
+            let mut clicked = false;
             if row_index == selected_phrase {
                 row.set_selected(true);
             }
@@ -136,17 +139,19 @@ fn draw_text_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, sende
                 ui.label(format!("{row_index}"));
             });
             row.col(|ui| {
-                if row_index == selected_phrase {
-                    let response = ui.add_sized(ui.available_size(), egui::TextEdit::singleline(&mut phrases[row_index]));
+                if row_index == state.edit_phrase {
+                    clicked = ui.add_sized(ui.available_size(), egui::TextEdit::singleline(&mut phrases[row_index])).clicked();
                 }
                 else {
-                    ui.label(&phrases[row_index]);
+                    clicked = ui.label(&phrases[row_index]).clicked();
                 }
             });
-            if row.response().clicked() {
+            clicked |= row.response().clicked();
+            if clicked {
                 setter.begin_set_parameter(&params.selected_phrase);
                 setter.set_parameter(&params.selected_phrase, row_index as i32);
                 setter.end_set_parameter(&params.selected_phrase);
+                state.edit_phrase = row_index;
             }
         });
     });

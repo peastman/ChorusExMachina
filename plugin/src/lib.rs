@@ -16,6 +16,7 @@ pub struct ChorusExMachina {
     last_vibrato: f32,
     last_intensity: f32,
     last_stereo_width: f32,
+    last_phrase: i32,
     next_syllable_index: usize
 }
 
@@ -66,6 +67,7 @@ impl Default for ChorusExMachina {
             last_vibrato: -1.0,
             last_intensity: -1.0,
             last_stereo_width: -1.0,
+            last_phrase: -1,
             next_syllable_index: 0
         }
     }
@@ -128,8 +130,7 @@ impl Plugin for ChorusExMachina {
     }
 
     fn reset(&mut self) {
-        // Reset buffers and envelopes here. This can be called from the audio thread and may not
-        // allocate. You can remove this function if you do not need it.
+        self.next_syllable_index = 0;
     }
 
     fn process(&mut self, buffer: &mut Buffer, _aux: &mut AuxiliaryBuffers, context: &mut impl ProcessContext<Self>) -> ProcessStatus {
@@ -151,6 +152,10 @@ impl Plugin for ChorusExMachina {
         if self.last_stereo_width != self.params.stereo_width.value() {
             self.last_stereo_width = self.params.stereo_width.value();
             let _ = sender.send(Message::SetStereoWidth {width: self.last_stereo_width});
+        }
+        if self.last_phrase != self.params.selected_phrase.value() {
+            self.last_phrase = self.params.selected_phrase.value();
+            self.next_syllable_index = 0;
         }
         for (sample_id, channel_samples) in buffer.iter_samples().enumerate() {
             while let Some(event) = next_event {
