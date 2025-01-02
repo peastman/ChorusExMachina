@@ -187,6 +187,9 @@ impl Director {
         self.shape_after_transitions = vec![vec![0.0; vocal_length]; voice_count];
         self.update_pan_positions();
         self.update_vibrato();
+        self.update_volume();
+        self.update_frequency();
+        self.update_sound();
     }
 
     /// Start singing a new note.
