@@ -102,4 +102,7 @@ There are several parameters you can automate in a DAW to control the performanc
 - **Vibrato**.  The amount of vibrato in the voices.  For choruses, it is best to stick to values
   near the middle of the range.  Solo voices can use more extreme values to add expression.
 - **Intensity**.  How relaxed or intense the voices sound.
+- **Brightness**.  The overall vowel color.  Reduce this to get a darker sound.
+- **Consonant Volume**.  How loud consonants are relative to vowels.  This can be automated for
+  fine control over individual consonants.
 - **Stereo Width**.  How widely the singers are spread out in space.

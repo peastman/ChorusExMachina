@@ -15,6 +15,8 @@ pub struct ChorusExMachina {
     last_dynamics: f32,
     last_vibrato: f32,
     last_intensity: f32,
+    last_brightness: f32,
+    last_consonant_volume: f32,
     last_stereo_width: f32,
     last_phrase: i32,
     next_syllable_index: usize
@@ -36,6 +38,10 @@ struct ChorusExMachinaParams {
     pub vibrato: FloatParam,
     #[id = "intensity"]
     pub intensity: FloatParam,
+    #[id = "brightness"]
+    pub brightness: FloatParam,
+    #[id = "consonant_volume"]
+    pub consonant_volume: FloatParam,
     #[id = "stereo_width"]
     pub stereo_width: FloatParam,
     #[id = "selected_phrase"]
@@ -66,6 +72,8 @@ impl Default for ChorusExMachina {
             last_dynamics: -1.0,
             last_vibrato: -1.0,
             last_intensity: -1.0,
+            last_brightness: -1.0,
+            last_consonant_volume: -1.0,
             last_stereo_width: -1.0,
             last_phrase: -1,
             next_syllable_index: 0
@@ -83,6 +91,8 @@ impl Default for ChorusExMachinaParams {
             dynamics: FloatParam::new("Dynamics", 1.0, FloatRange::Linear {min: 0.0, max: 1.0}),
             vibrato: FloatParam::new("Vibrato", 0.4, FloatRange::Linear {min: 0.0, max: 1.0}),
             intensity: FloatParam::new("Intensity", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
+            brightness: FloatParam::new("Brightness", 1.0, FloatRange::Linear {min: 0.0, max: 1.0}),
+            consonant_volume: FloatParam::new("Consonant Volume", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
             stereo_width: FloatParam::new("Stereo Width", 0.3, FloatRange::Linear {min: 0.0, max: 1.0}),
             selected_phrase: IntParam::new("Selected Phrase", 0, IntRange::Linear {min: 0, max: 127})
         };
@@ -148,6 +158,14 @@ impl Plugin for ChorusExMachina {
         if self.last_intensity != self.params.intensity.value() {
             self.last_intensity = self.params.intensity.value();
             let _ = sender.send(Message::SetIntensity {intensity: self.last_intensity});
+        }
+        if self.last_brightness != self.params.brightness.value() {
+            self.last_brightness = self.params.brightness.value();
+            let _ = sender.send(Message::SetBrightness {brightness: self.last_brightness});
+        }
+        if self.last_consonant_volume != self.params.consonant_volume.value() {
+            self.last_consonant_volume = self.params.consonant_volume.value();
+            let _ = sender.send(Message::SetConsonantVolume {volume: self.last_consonant_volume});
         }
         if self.last_stereo_width != self.params.stereo_width.value() {
             self.last_stereo_width = self.params.stereo_width.value();

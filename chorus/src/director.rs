@@ -17,6 +17,8 @@ pub enum Message {
     SetPitchBend {semitones: f32},
     SetVibrato {vibrato: f32},
     SetIntensity {intensity: f32},
+    SetBrightness {brightness: f32},
+    SetConsonantVolume {volume: f32},
     SetStereoWidth {width: f32},
     SetDelays {vowel_delay: i64, vowel_transition_time: i64, consonant_delay: i64, consonant_transition_time: i64},
     SetConsonants {on_time: i64, off_time: i64, volume: f32, position: usize, frequency: f32, bandwidth: f32},
@@ -75,6 +77,8 @@ pub struct Director {
     bend: f32,
     vibrato: f32,
     intensity: f32,
+    brightness: f32,
+    consonant_volume: f32,
     off_after_step: i64,
     shape_after_transitions: Vec<Vec<f32>>,
     nasal_coupling_after_transitions: f32,
@@ -83,13 +87,14 @@ pub struct Director {
     message_receiver: mpsc::Receiver<Message>,
     stereo_width: f32,
     voice_pan: Vec<f32>,
+    dark_shape: Vec<f32>,
     vowel_delay: i64,
     vowel_transition_time: i64,
     consonant_delay: i64,
     consonant_transition_time: i64,
     consonant_on_time: i64,
     consonant_off_time: i64,
-    consonant_volume: f32,
+    consonant_volume2: f32,
     consonant_position: usize,
     consonant_frequency: f32,
     consonant_bandwidth: f32,
@@ -116,6 +121,8 @@ impl Director {
             bend: 1.0,
             vibrato: 0.4,
             intensity: 0.5,
+            brightness: 1.0,
+            consonant_volume: 0.5,
             off_after_step: 0,
             shape_after_transitions: vec![],
             nasal_coupling_after_transitions: 0.0,
@@ -124,19 +131,21 @@ impl Director {
             message_receiver: message_receiver,
             stereo_width: 0.3,
             voice_pan: vec![],
+            dark_shape: vec![],
             vowel_delay: 0,
             vowel_transition_time: 3300,
             consonant_delay: 3000,
             consonant_transition_time: 0,
             consonant_on_time: 1000,
             consonant_off_time: 1000,
-            consonant_volume: 0.1,
+            consonant_volume2: 0.1,
             consonant_position: 40,
             consonant_frequency: 2000.0,
             consonant_bandwidth: 3000.0,
             randomize: 0.1
         };
         result.initialize_voices(voice_part, voice_count);
+        result.dark_shape = result.phonemes.get_vowel_shape('9').unwrap().clone();
         result
     }
 
@@ -145,8 +154,11 @@ impl Director {
         self.voices.clear();
         for i in 0..voice_count {
             let mut voice = Voice::new(voice_part);
-            if i != voice_count/2 {
-                voice.set_vibrato_frequency(voice.get_vibrato_frequency()+0.2*self.random.get_uniform()-0.1);
+            if i%voice_count == 1 {
+                voice.set_vibrato_frequency(voice.get_vibrato_frequency()+0.2);
+            }
+            else if i%voice_count == 2 {
+                voice.set_vibrato_frequency(voice.get_vibrato_frequency()-0.2);
             }
             self.voices.push(voice);
         }
@@ -401,13 +413,14 @@ impl Director {
         //     transition_time: self.vowel_transition_time,
         //     on_time: self.consonant_on_time,
         //     off_time: self.consonant_off_time,
-        //     volume: self.consonant_volume,
+        //     volume: self.consonant_volume2,
         //     position: self.consonant_position,
         //     filter: ResonantFilter::new(self.consonant_frequency, self.consonant_bandwidth),
         //     mono: false
         // };
         let mut consonant = self.phonemes.get_consonant(c).unwrap();
         consonant.start = self.step+delay;
+        consonant.volume *= 2.0*self.consonant_volume;
         if is_final {
             consonant.volume *= 0.8;
             consonant.off_time = (consonant.off_time as f32 * 0.8) as i64;
@@ -447,7 +460,13 @@ impl Director {
     }
 
     /// Add a ShapeChange transition to the queue.
-    fn add_shape_transition(&mut self, delay: i64, duration: i64, end_shape: Vec<f32>, end_nasal_coupling: f32) {
+    fn add_shape_transition(&mut self, delay: i64, duration: i64, mut end_shape: Vec<f32>, end_nasal_coupling: f32) {
+        if end_nasal_coupling == 0.0 && self.brightness < 1.0 {
+            let blend = (1.0-self.brightness)*0.2;
+            for i in 0..end_shape.len() {
+                end_shape[i] = (1.0-blend)*end_shape[i] + blend*self.dark_shape[i];
+            }
+        }
         let mut end_shapes = vec![end_shape; self.voices.len()];
         for shape in &mut end_shapes {
             for x in shape {
@@ -571,6 +590,12 @@ impl Director {
                             self.intensity = intensity;
                             self.update_sound();
                         }
+                        Message::SetBrightness {brightness} => {
+                            self.brightness = brightness;
+                        }
+                        Message::SetConsonantVolume {volume} => {
+                            self.consonant_volume = volume;
+                        }
                         Message::SetStereoWidth {width} => {
                             self.stereo_width = width;
                             self.update_pan_positions();
@@ -586,7 +611,7 @@ impl Director {
                             // This message is only used for develoment.
                             self.consonant_on_time = on_time;
                             self.consonant_off_time = off_time;
-                            self.consonant_volume = volume;
+                            self.consonant_volume2 = volume;
                             self.consonant_position = position;
                             self.consonant_frequency = frequency;
                             self.consonant_bandwidth = bandwidth;

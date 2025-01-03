@@ -95,6 +95,8 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
         draw_param_slider(ui, &params.dynamics, setter);
         draw_param_slider(ui, &params.vibrato, setter);
         draw_param_slider(ui, &params.intensity, setter);
+        draw_param_slider(ui, &params.brightness, setter);
+        draw_param_slider(ui, &params.consonant_volume, setter);
         draw_param_slider(ui, &params.stereo_width, setter);
     });
 }
