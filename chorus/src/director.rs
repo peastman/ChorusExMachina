@@ -19,6 +19,7 @@ pub enum Message {
     SetIntensity {intensity: f32},
     SetBrightness {brightness: f32},
     SetConsonantVolume {volume: f32},
+    SetAccent {accent: bool},
     SetStereoWidth {width: f32},
     SetDelays {vowel_delay: i64, vowel_transition_time: i64, consonant_delay: i64, consonant_transition_time: i64},
     SetConsonants {on_time: i64, off_time: i64, volume: f32, position: usize, frequency: f32, bandwidth: f32},
@@ -46,9 +47,7 @@ enum TransitionData {
 /// and velocity), as well as the syllable to sing it on.
 struct Note {
     syllable: Syllable,
-    note_index: i32,
-    frequency: f32,
-    velocity: f32
+    note_index: i32
 }
 
 /// This is the main class you interact with when synthesizing audio.  A Director controls a set
@@ -79,6 +78,7 @@ pub struct Director {
     intensity: f32,
     brightness: f32,
     consonant_volume: f32,
+    accent: bool,
     off_after_step: i64,
     shape_after_transitions: Vec<Vec<f32>>,
     nasal_coupling_after_transitions: f32,
@@ -123,6 +123,7 @@ impl Director {
             intensity: 0.5,
             brightness: 1.0,
             consonant_volume: 0.5,
+            accent: false,
             off_after_step: 0,
             shape_after_transitions: vec![],
             nasal_coupling_after_transitions: 0.0,
@@ -145,7 +146,6 @@ impl Director {
             randomize: 0.1
         };
         result.initialize_voices(voice_part, voice_count);
-        result.dark_shape = result.phonemes.get_vowel_shape('9').unwrap().clone();
         result
     }
 
@@ -197,6 +197,7 @@ impl Director {
             }
         }
         self.shape_after_transitions = vec![vec![0.0; vocal_length]; voice_count];
+        self.dark_shape = self.phonemes.get_vowel_shape('9').unwrap().clone();
         self.update_pan_positions();
         self.update_vibrato();
         self.update_volume();
@@ -287,7 +288,6 @@ impl Director {
 
         let shape = self.phonemes.get_vowel_shape(new_syllable.main_vowel).unwrap().clone();
         let nasal_coupling = self.phonemes.get_nasal_coupling(new_syllable.main_vowel);
-        let amplification = self.phonemes.get_amplification(new_syllable.main_vowel);
         let transition_time = if self.current_note.is_some() || new_syllable.initial_vowels.len() > 0 || new_syllable.initial_consonants.len() > 0 {self.vowel_transition_time} else {0};
         if prev_vowel.is_some() {
             self.add_vowel_transition(delay, prev_vowel.unwrap(), new_syllable.main_vowel, self.vowel_transition_time);
@@ -303,18 +303,27 @@ impl Director {
             };
             self.add_shape_transition(delay, transition_time, shape, nasal_coupling)
         }
+
+        // Adjust the envelope for the new note.  If accent is enabled, overshoot it then come back down.
+
+        let amplification = self.phonemes.get_amplification(new_syllable.main_vowel);
+        let max_amplitude = if self.accent {amplification*(1.0+4.0*velocity)} else {amplification};
         self.add_transition(delay, 2000, TransitionData::EnvelopeChange {
             start_envelope: self.envelope_after_transitions,
-            end_envelope: amplification
+            end_envelope: max_amplitude
         });
+        if self.accent {
+            self.add_transition(delay+2000, 4000, TransitionData::EnvelopeChange {
+                start_envelope: max_amplitude,
+                end_envelope: amplification
+            });
+        }
 
         // Record the note we're now playing.
 
         let note = Note {
             syllable: new_syllable,
-            note_index: note_index,
-            frequency: frequency,
-            velocity: velocity
+            note_index: note_index
         };
         self.current_note = Some(note);
         self.update_sound();
@@ -422,7 +431,6 @@ impl Director {
         consonant.start = self.step+delay;
         consonant.volume *= 2.0*self.consonant_volume;
         if is_final {
-            consonant.volume *= 0.8;
             consonant.off_time = (consonant.off_time as f32 * 0.8) as i64;
         }
         let delay_to_consonant = consonant.delay+consonant.on_time+consonant.off_time;
@@ -595,6 +603,9 @@ impl Director {
                         }
                         Message::SetConsonantVolume {volume} => {
                             self.consonant_volume = volume;
+                        }
+                        Message::SetAccent {accent} => {
+                            self.accent = accent;
                         }
                         Message::SetStereoWidth {width} => {
                             self.stereo_width = width;

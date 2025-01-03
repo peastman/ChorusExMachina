@@ -94,6 +94,9 @@ press a new note before releasing the previous one, it is played legato, smoothl
 them.  Legato transitions are only possible between vowels, however.  If there are any consonants
 in between, they necessarily create a break in the sound.
 
+You can optionally add an accent to the beginning of each separated (non-legato) note.  When this
+option is enabled, the strength of the accent is determined by the key velocity.
+
 There are several parameters you can automate in a DAW to control the performance.
 
 - **Selected Phrase**.  The index of the phrase to sing.
@@ -106,3 +109,4 @@ There are several parameters you can automate in a DAW to control the performanc
 - **Consonant Volume**.  How loud consonants are relative to vowels.  This can be automated for
   fine control over individual consonants.
 - **Stereo Width**.  How widely the singers are spread out in space.
+- **Accent**.  Whether to add an accent to each note based on its velocity.

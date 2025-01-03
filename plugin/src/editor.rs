@@ -98,21 +98,24 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
         draw_param_slider(ui, &params.brightness, setter);
         draw_param_slider(ui, &params.consonant_volume, setter);
         draw_param_slider(ui, &params.stereo_width, setter);
+        let mut accent = params.accent.value();
+        if ui.checkbox(&mut accent, "Accent").changed() {
+            setter.begin_set_parameter(&params.accent);
+            setter.set_parameter(&params.accent, accent);
+            setter.end_set_parameter(&params.accent);
+        }
     });
 }
 
-fn draw_param_slider(ui: &mut egui::Ui, param: &FloatParam, setter: &ParamSetter) -> bool {
+fn draw_param_slider(ui: &mut egui::Ui, param: &FloatParam, setter: &ParamSetter) {
     ui.label(param.name());
     let mut value = param.value();
-    let mut changed = false;
-    if ui.add(egui::Slider::new(&mut value, 0.0..=1.0)).dragged() {
+    if ui.add(egui::Slider::new(&mut value, 0.0..=1.0)).changed() {
         setter.begin_set_parameter(param);
         setter.set_parameter(param, value);
         setter.end_set_parameter(param);
-        changed = true;
     }
     ui.end_row();
-    changed
 }
 
 fn draw_text_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, setter: &ParamSetter, state: &mut UIState) {

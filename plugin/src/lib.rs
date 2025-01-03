@@ -18,6 +18,7 @@ pub struct ChorusExMachina {
     last_brightness: f32,
     last_consonant_volume: f32,
     last_stereo_width: f32,
+    last_accent: bool,
     last_phrase: i32,
     next_syllable_index: usize
 }
@@ -44,6 +45,8 @@ struct ChorusExMachinaParams {
     pub consonant_volume: FloatParam,
     #[id = "stereo_width"]
     pub stereo_width: FloatParam,
+    #[id = "accent"]
+    pub accent: BoolParam,
     #[id = "selected_phrase"]
     pub selected_phrase: IntParam
 }
@@ -75,6 +78,7 @@ impl Default for ChorusExMachina {
             last_brightness: -1.0,
             last_consonant_volume: -1.0,
             last_stereo_width: -1.0,
+            last_accent: false,
             last_phrase: -1,
             next_syllable_index: 0
         }
@@ -94,6 +98,7 @@ impl Default for ChorusExMachinaParams {
             brightness: FloatParam::new("Brightness", 1.0, FloatRange::Linear {min: 0.0, max: 1.0}),
             consonant_volume: FloatParam::new("Consonant Volume", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
             stereo_width: FloatParam::new("Stereo Width", 0.3, FloatRange::Linear {min: 0.0, max: 1.0}),
+            accent: BoolParam::new("Accent", false),
             selected_phrase: IntParam::new("Selected Phrase", 0, IntRange::Linear {min: 0, max: 127})
         };
         result.phrases.lock().unwrap()[0] = "A".to_string();
@@ -170,6 +175,10 @@ impl Plugin for ChorusExMachina {
         if self.last_stereo_width != self.params.stereo_width.value() {
             self.last_stereo_width = self.params.stereo_width.value();
             let _ = sender.send(Message::SetStereoWidth {width: self.last_stereo_width});
+        }
+        if self.last_accent != self.params.accent.value() {
+            self.last_accent = self.params.accent.value();
+            let _ = sender.send(Message::SetAccent {accent: self.last_accent});
         }
         if self.last_phrase != self.params.selected_phrase.value() {
             self.last_phrase = self.params.selected_phrase.value();
