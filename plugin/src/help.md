@@ -108,5 +108,6 @@ There are several parameters you can automate in a DAW to control the performanc
 - **Brightness**.  The overall vowel color.  Reduce this to get a darker sound.
 - **Consonant Volume**.  How loud consonants are relative to vowels.  This can be automated for
   fine control over individual consonants.
+- **Attack Rate**.  How quickly notes reach full volume.
 - **Stereo Width**.  How widely the singers are spread out in space.
 - **Accent**.  Whether to add an accent to each note based on its velocity.

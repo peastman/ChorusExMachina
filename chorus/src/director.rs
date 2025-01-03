@@ -19,6 +19,7 @@ pub enum Message {
     SetIntensity {intensity: f32},
     SetBrightness {brightness: f32},
     SetConsonantVolume {volume: f32},
+    SetAttackRate {attack: f32},
     SetAccent {accent: bool},
     SetStereoWidth {width: f32},
     SetDelays {vowel_delay: i64, vowel_transition_time: i64, consonant_delay: i64, consonant_transition_time: i64},
@@ -78,6 +79,7 @@ pub struct Director {
     intensity: f32,
     brightness: f32,
     consonant_volume: f32,
+    attack_rate: f32,
     accent: bool,
     off_after_step: i64,
     shape_after_transitions: Vec<Vec<f32>>,
@@ -123,6 +125,7 @@ impl Director {
             intensity: 0.5,
             brightness: 1.0,
             consonant_volume: 0.5,
+            attack_rate: 0.8,
             accent: false,
             off_after_step: 0,
             shape_after_transitions: vec![],
@@ -308,12 +311,13 @@ impl Director {
 
         let amplification = self.phonemes.get_amplification(new_syllable.main_vowel);
         let max_amplitude = if self.accent {amplification*(1.0+4.0*velocity)} else {amplification};
-        self.add_transition(delay, 2000, TransitionData::EnvelopeChange {
+        let attack_time = 1000+(10000.0*(1.0-self.attack_rate)) as i64;
+        self.add_transition(delay, attack_time, TransitionData::EnvelopeChange {
             start_envelope: self.envelope_after_transitions,
             end_envelope: max_amplitude
         });
         if self.accent {
-            self.add_transition(delay+2000, 4000, TransitionData::EnvelopeChange {
+            self.add_transition(delay+attack_time, 4000, TransitionData::EnvelopeChange {
                 start_envelope: max_amplitude,
                 end_envelope: amplification
             });
@@ -603,6 +607,9 @@ impl Director {
                         }
                         Message::SetConsonantVolume {volume} => {
                             self.consonant_volume = volume;
+                        }
+                        Message::SetAttackRate {attack} => {
+                            self.attack_rate = attack;
                         }
                         Message::SetAccent {accent} => {
                             self.accent = accent;

@@ -17,6 +17,7 @@ pub struct ChorusExMachina {
     last_intensity: f32,
     last_brightness: f32,
     last_consonant_volume: f32,
+    last_attack_rate: f32,
     last_stereo_width: f32,
     last_accent: bool,
     last_phrase: i32,
@@ -43,6 +44,8 @@ struct ChorusExMachinaParams {
     pub brightness: FloatParam,
     #[id = "consonant_volume"]
     pub consonant_volume: FloatParam,
+    #[id = "attack_rate"]
+    pub attack_rate: FloatParam,
     #[id = "stereo_width"]
     pub stereo_width: FloatParam,
     #[id = "accent"]
@@ -77,6 +80,7 @@ impl Default for ChorusExMachina {
             last_intensity: -1.0,
             last_brightness: -1.0,
             last_consonant_volume: -1.0,
+            last_attack_rate: -1.0,
             last_stereo_width: -1.0,
             last_accent: false,
             last_phrase: -1,
@@ -97,6 +101,7 @@ impl Default for ChorusExMachinaParams {
             intensity: FloatParam::new("Intensity", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
             brightness: FloatParam::new("Brightness", 1.0, FloatRange::Linear {min: 0.0, max: 1.0}),
             consonant_volume: FloatParam::new("Consonant Volume", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
+            attack_rate: FloatParam::new("Attack Rate", 0.8, FloatRange::Linear {min: 0.0, max: 1.0}),
             stereo_width: FloatParam::new("Stereo Width", 0.3, FloatRange::Linear {min: 0.0, max: 1.0}),
             accent: BoolParam::new("Accent", false),
             selected_phrase: IntParam::new("Selected Phrase", 0, IntRange::Linear {min: 0, max: 127})
@@ -171,6 +176,10 @@ impl Plugin for ChorusExMachina {
         if self.last_consonant_volume != self.params.consonant_volume.value() {
             self.last_consonant_volume = self.params.consonant_volume.value();
             let _ = sender.send(Message::SetConsonantVolume {volume: self.last_consonant_volume});
+        }
+        if self.last_attack_rate != self.params.attack_rate.value() {
+            self.last_attack_rate = self.params.attack_rate.value();
+            let _ = sender.send(Message::SetAttackRate {attack: self.last_attack_rate});
         }
         if self.last_stereo_width != self.params.stereo_width.value() {
             self.last_stereo_width = self.params.stereo_width.value();

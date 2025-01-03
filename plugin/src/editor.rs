@@ -97,6 +97,7 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
         draw_param_slider(ui, &params.intensity, setter);
         draw_param_slider(ui, &params.brightness, setter);
         draw_param_slider(ui, &params.consonant_volume, setter);
+        draw_param_slider(ui, &params.attack_rate, setter);
         draw_param_slider(ui, &params.stereo_width, setter);
         let mut accent = params.accent.value();
         if ui.checkbox(&mut accent, "Accent").changed() {
