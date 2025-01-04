@@ -1,0 +1,3 @@
+[submodule "au/clap-wrapper"]
+	path = au/clap-wrapper
+	url = https://github.com/free-audio/clap-wrapper.git
