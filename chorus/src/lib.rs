@@ -18,6 +18,7 @@ pub mod phonemes;
 pub mod director;
 pub mod syllable;
 pub mod random;
+pub mod resampler;
 pub mod filter;
 
 pub const SAMPLE_RATE: i32 = 48000;

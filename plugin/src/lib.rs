@@ -17,6 +17,7 @@ mod editor;
 
 use chorus;
 use chorus::director::{Director, Message};
+use chorus::resampler::Resampler;
 use nih_plug::prelude::*;
 use nih_plug_egui::EguiState;
 use std::sync::{Arc, Mutex, mpsc};
@@ -26,6 +27,9 @@ pub struct ChorusExMachina {
     director: Arc<Mutex<Director>>,
     sender: Arc<Mutex<mpsc::Sender<Message>>>,
     editor_state: Arc<Mutex<editor::UIState>>,
+    need_resample: bool,
+    resample_left: Resampler,
+    resample_right: Resampler,
     last_note: u8,
     last_dynamics: f32,
     last_vibrato: f32,
@@ -91,6 +95,9 @@ impl Default for ChorusExMachina {
             director: Arc::new(Mutex::new(Director::new(chorus::VoicePart::Soprano, 1, receiver))),
             sender: Arc::new(Mutex::new(sender)),
             editor_state: Arc::new(Mutex::new(editor::UIState::new())),
+            need_resample: false,
+            resample_left: Resampler::new(chorus::SAMPLE_RATE as f32),
+            resample_right: Resampler::new(chorus::SAMPLE_RATE as f32),
             last_note: 255,
             last_dynamics: -1.0,
             last_vibrato: -1.0,
@@ -155,7 +162,10 @@ impl Plugin for ChorusExMachina {
         self.params.clone()
     }
 
-    fn initialize(&mut self, _audio_io_layout: &AudioIOLayout, _buffer_config: &BufferConfig, _context: &mut impl InitContext<Self>) -> bool {
+    fn initialize(&mut self, _audio_io_layout: &AudioIOLayout, buffer_config: &BufferConfig, _context: &mut impl InitContext<Self>) -> bool {
+        self.need_resample = buffer_config.sample_rate != chorus::SAMPLE_RATE as f32;
+        self.resample_left = Resampler::new(buffer_config.sample_rate);
+        self.resample_right = Resampler::new(buffer_config.sample_rate);
         let voice_part = match self.params.voice_part.value() {
             VoicePart::Soprano => chorus::VoicePart::Soprano,
             VoicePart::Alto => chorus::VoicePart::Alto,
@@ -247,7 +257,20 @@ impl Plugin for ChorusExMachina {
                 }
                 next_event = context.next_event();
             }
-            let (left, right) = director.generate();
+            let left;
+            let right;
+            if self.need_resample {
+                while !self.resample_left.has_output() {
+                    let (left2, right2) = director.generate();
+                    self.resample_left.add_input(left2);
+                    self.resample_right.add_input(right2);
+                }
+                left = self.resample_left.get_output();
+                right = self.resample_right.get_output();
+            }
+            else {
+                (left, right) = director.generate();
+            }
             let mut i = 0;
             for sample in channel_samples {
                 if i == 0 {
