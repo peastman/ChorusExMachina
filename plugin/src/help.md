@@ -5,7 +5,9 @@ For example, to sing the words "Happy birthday to you," enter the phrase `h{ pe 
 the next syllable.  When it reaches the end of the current phrase, it loops back to the start again.
 
 You can enter up to 128 phrases.  To select the phrase to sing, click on it in the table.  To automate it in a DAW, set the parameter
-"Selected Phrase" to the index of the phrase to sing.
+"Selected Phrase" to the index of the phrase to sing.  You can use the "Advance Syllable" parameter to temporarily disable advancing
+to the next syllable.  When this option is off, every note continues to use the same syllable until it is turned back on.  This is
+useful when a phrase is sung repeatedly, but the number of notes each syllable is used for changes between repetitions.
 
 A syllable consists of
 
@@ -111,3 +113,4 @@ There are several parameters you can automate in a DAW to control the performanc
 - **Attack Rate**.  How quickly notes reach full volume.
 - **Stereo Width**.  How widely the singers are spread out in space.
 - **Accent**.  Whether to add an accent to each note based on its velocity.
+- **Advance Syllable**.  Whether to advance to the next syllable in the phrase for the next note.

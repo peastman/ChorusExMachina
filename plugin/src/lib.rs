@@ -36,7 +36,7 @@ pub struct ChorusExMachina {
     last_stereo_width: f32,
     last_accent: bool,
     last_phrase: i32,
-    next_syllable_index: usize
+    last_syllable_index: i32
 }
 
 #[derive(Params)]
@@ -66,7 +66,9 @@ struct ChorusExMachinaParams {
     #[id = "accent"]
     pub accent: BoolParam,
     #[id = "selected_phrase"]
-    pub selected_phrase: IntParam
+    pub selected_phrase: IntParam,
+    #[id = "advance_syllable"]
+    pub advance_syllable: BoolParam
 }
 
 #[derive(Copy, Clone, Enum, Debug, PartialEq)]
@@ -99,7 +101,7 @@ impl Default for ChorusExMachina {
             last_stereo_width: -1.0,
             last_accent: false,
             last_phrase: -1,
-            next_syllable_index: 0
+            last_syllable_index: -1
         }
     }
 }
@@ -119,7 +121,8 @@ impl Default for ChorusExMachinaParams {
             attack_rate: FloatParam::new("Attack Rate", 0.8, FloatRange::Linear {min: 0.0, max: 1.0}),
             stereo_width: FloatParam::new("Stereo Width", 0.3, FloatRange::Linear {min: 0.0, max: 1.0}),
             accent: BoolParam::new("Accent", false),
-            selected_phrase: IntParam::new("Selected Phrase", 0, IntRange::Linear {min: 0, max: 127})
+            selected_phrase: IntParam::new("Selected Phrase", 0, IntRange::Linear {min: 0, max: 127}),
+            advance_syllable: BoolParam::new("Advance Syllable", true),
         };
         result.phrases.lock().unwrap()[0] = "A".to_string();
         result
@@ -165,7 +168,7 @@ impl Plugin for ChorusExMachina {
     }
 
     fn reset(&mut self) {
-        self.next_syllable_index = 0;
+        self.last_syllable_index = -1;
     }
 
     fn process(&mut self, buffer: &mut Buffer, _aux: &mut AuxiliaryBuffers, context: &mut impl ProcessContext<Self>) -> ProcessStatus {
@@ -206,7 +209,7 @@ impl Plugin for ChorusExMachina {
         }
         if self.last_phrase != self.params.selected_phrase.value() {
             self.last_phrase = self.params.selected_phrase.value();
-            self.next_syllable_index = 0;
+            self.last_syllable_index = -1;
         }
         for (sample_id, channel_samples) in buffer.iter_samples().enumerate() {
             while let Some(event) = next_event {
@@ -217,13 +220,19 @@ impl Plugin for ChorusExMachina {
                     NoteEvent::NoteOn { note, velocity, .. } => {
                         let phrase = self.params.phrases.lock().unwrap()[self.params.selected_phrase.value() as usize].clone();
                         let syllables: Vec<&str> = phrase.split_whitespace().collect();
-                        if self.next_syllable_index >= syllables.len() {
-                            self.next_syllable_index = 0;
+                        if self.params.advance_syllable.value() {
+                            self.last_syllable_index = (self.last_syllable_index+1)%syllables.len() as i32;
+                        }
+                        let syllable_index: usize;
+                        if self.last_syllable_index < 0 || self.last_syllable_index >= syllables.len() as i32 {
+                            syllable_index = 0;
+                        }
+                        else {
+                            syllable_index = self.last_syllable_index as usize;
                         }
                         if syllables.len() > 0 {
-                            let _ = sender.send(Message::NoteOn {syllable: syllables[self.next_syllable_index].to_string(), note_index: note as i32, velocity: velocity});
+                            let _ = sender.send(Message::NoteOn {syllable: syllables[syllable_index].to_string(), note_index: note as i32, velocity: velocity});
                             self.last_note = note;
-                            self.next_syllable_index = (self.next_syllable_index+1)%syllables.len();
                         }
                     },
                     NoteEvent::NoteOff { note, .. } => {

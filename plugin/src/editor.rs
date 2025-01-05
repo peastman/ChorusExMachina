@@ -120,6 +120,12 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
             setter.set_parameter(&params.accent, accent);
             setter.end_set_parameter(&params.accent);
         }
+        let mut advance_syllable = params.advance_syllable.value();
+        if ui.checkbox(&mut advance_syllable, "Advance Syllable").changed() {
+            setter.begin_set_parameter(&params.advance_syllable);
+            setter.set_parameter(&params.advance_syllable, advance_syllable);
+            setter.end_set_parameter(&params.advance_syllable);
+        }
     });
 }
 
