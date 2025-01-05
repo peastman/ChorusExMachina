@@ -20,17 +20,16 @@ use std::f32::consts::PI;
 
 /// A Phonemes object acts as a database of information on how to pronounce vowels and consonants.
 pub struct Phonemes {
+    voice_part: VoicePart,
     shape_map: HashMap<char, Vec<f32>>,
     nasal_vowels: HashSet<char>,
     consonant_map: HashMap<char, Consonant>,
-    consonant_base_shape: HashMap<char, char>,
     amplification: HashMap<char, f32>
 }
 
 impl Phonemes {
     pub fn new(voice_part: VoicePart) -> Self {
         let mut shape_map = HashMap::new();
-        let mut consonant_map = HashMap::new();
         match voice_part {
             VoicePart::Soprano => {
                 shape_map.insert('&', vec![0.801, 0.753, 0.633, 0.521, 0.433, 0.445, 2.42, 4.86, 5.7, 5.45, 4.88, 4.29, 4.4, 4.8, 4.91, 4.87, 4.86, 4.93, 5.25, 5.91, 6.88, 7.12, 5.8, 5.45, 4.8, 3.9, 3.28, 2.6, 2.19, 2.39, 2.87, 3.13, 3.43, 3.51, 3.34, 2.82, 2.32, 1.82, 1.29, 0.799, 1.33, 1.99]);
@@ -57,27 +56,6 @@ impl Phonemes {
                 shape_map.insert('u', vec![0.701, 0.66, 0.546, 0.471, 0.488, 1.56, 4.56, 5.57, 5.69, 5.48, 5.68, 6.11, 6.75, 6.94, 6.85, 6.31, 5.42, 4.69, 4.39, 4.47, 3.97, 2.6, 2.13, 1.48, 0.841, 0.479, 0.384, 0.57, 1.2, 1.95, 2.58, 2.99, 3.43, 3.56, 4.47, 7.51, 6.38, 2.98, 1.58, 0.723, 0.379, 0.355]);
                 shape_map.insert('y', vec![0.801, 0.75, 0.628, 0.516, 0.427, 0.453, 2.31, 4.33, 5.07, 4.78, 4.32, 4.0, 4.39, 5.51, 6.26, 6.94, 7.6, 8.24, 8.94, 8.52, 7.44, 7.15, 5.83, 4.4, 2.99, 1.64, 0.835, 0.563, 0.504, 0.558, 0.72, 0.766, 0.796, 0.765, 0.908, 1.16, 1.35, 1.6, 1.38, 0.768, 0.336, 0.291]);
                 shape_map.insert('{', vec![0.298, 0.25, 0.337, 0.487, 0.847, 0.991, 1.03, 1.06, 1.09, 1.1, 1.13, 1.33, 1.6, 1.78, 1.89, 2.1, 2.46, 2.85, 3.44, 3.73, 3.93, 4.09, 4.12, 4.21, 4.3, 4.7, 4.81, 4.86, 4.9, 4.69, 4.42, 3.97, 3.71, 3.81, 3.91, 3.85, 3.52, 3.3, 3.44, 3.51, 3.37, 3.2]);
-                consonant_map.insert('b', Consonant {sampa: 'b', start: 0, delay: 100, transition_time: 2700, on_time: 300, off_time: 1500, volume: 0.008, position: 38, filter: ResonantFilter::new(800.0, 4900.0), mono: false});
-                consonant_map.insert('d', Consonant {sampa: 'd', start: 0, delay: 300, transition_time: 3000, on_time: 300, off_time: 1000, volume: 0.006, position: 35, filter: ResonantFilter::new(1300.0, 3200.0), mono: false});
-                consonant_map.insert('f', Consonant {sampa: 'f', start: 0, delay: 2500, transition_time: 4000, on_time: 2000, off_time: 2000, volume: 0.011, position: 38, filter: ResonantFilter::new(1700.0, 5700.0), mono: true});
-                consonant_map.insert('g', Consonant {sampa: 'g', start: 0, delay: 600, transition_time: 2700, on_time: 200, off_time: 750, volume: 0.008, position: 26, filter: ResonantFilter::new(1025.0, 5950.0), mono: false});
-                consonant_map.insert('h', Consonant {sampa: 'h', start: 0, delay: 3000, transition_time: 1000, on_time: 2000, off_time: 4000, volume: 0.003, position: 8, filter: ResonantFilter::new(1150.0, 5700.0), mono: false});
-                consonant_map.insert('j', Consonant {sampa: 'j', start: 0, delay: 0, transition_time: 3000, on_time: 0, off_time: 0, volume: 0.0, position: 1, filter: ResonantFilter::new(4150.0, 6500.0), mono: false});
-                consonant_map.insert('k', Consonant {sampa: 'k', start: 0, delay: 500, transition_time: 1500, on_time: 900, off_time: 1100, volume: 0.012, position: 28, filter: ResonantFilter::new(4350.0, 6850.0), mono: false});
-                consonant_map.insert('p', Consonant {sampa: 'p', start: 0, delay: 1200, transition_time: 500, on_time: 300, off_time: 1500, volume: 0.008, position: 40, filter: ResonantFilter::new(800.0, 4900.0), mono: false});
-                consonant_map.insert('r', Consonant {sampa: 'r', start: 0, delay: 100, transition_time: 2700, on_time: 700, off_time: 900, volume: 0.004, position: 35, filter: ResonantFilter::new(1400.0, 4800.0), mono: false});
-                consonant_map.insert('s', Consonant {sampa: 's', start: 0, delay: 3000, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 39, filter: ResonantFilter::new(5700.0, 1100.0), mono: true});
-                consonant_map.insert('t', Consonant {sampa: 't', start: 0, delay: 300, transition_time: 1500, on_time: 850, off_time: 1500, volume: 0.01, position: 35, filter: ResonantFilter::new(4700.0, 6850.0), mono: false});
-                consonant_map.insert('v', Consonant {sampa: 'v', start: 0, delay: 700, transition_time: 4000, on_time: 2000, off_time: 2000, volume: 0.011, position: 38, filter: ResonantFilter::new(1600.0, 5700.0), mono: true});
-                consonant_map.insert('x', Consonant {sampa: 'x', start: 0, delay: 3000, transition_time: 1000, on_time: 2000, off_time: 4000, volume: 0.005, position: 13, filter: ResonantFilter::new(1150.0, 3400.0), mono: false});
-                consonant_map.insert('z', Consonant {sampa: 'z', start: 0, delay: 100, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 39, filter: ResonantFilter::new(5700.0, 800.0), mono: true});
-                consonant_map.insert('D', Consonant {sampa: 'D', start: 0, delay: 200, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 36, filter: ResonantFilter::new(5100.0, 5700.0), mono: true});
-                consonant_map.insert('S', Consonant {sampa: 'S', start: 0, delay: 3000, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.01, position: 39, filter: ResonantFilter::new(3400.0, 1070.0), mono: true});
-                consonant_map.insert('T', Consonant {sampa: 'T', start: 0, delay: 1500, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 36, filter: ResonantFilter::new(5100.0, 5700.0), mono: true});
-                consonant_map.insert('Z', Consonant {sampa: 'Z', start: 0, delay: 100, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 39, filter: ResonantFilter::new(3400.0, 800.0), mono: true});
-                consonant_map.insert('4', Consonant {sampa: '4', start: 0, delay: 100, transition_time: 2700, on_time: 700, off_time: 900, volume: 0.006, position: 35, filter: ResonantFilter::new(1400.0, 4800.0), mono: false});
-                consonant_map.insert('ʤ', Consonant {sampa: 'ʤ', start: 0, delay: 300, transition_time: 800, on_time: 2100, off_time: 2300, volume: 0.015, position: 37, filter: ResonantFilter::new(2300.0, 1500.0), mono: true});
-                consonant_map.insert('ʧ', Consonant {sampa: 'ʧ', start: 0, delay: 3000, transition_time: 800, on_time: 2100, off_time: 2300, volume: 0.015, position: 37, filter: ResonantFilter::new(2300.0, 1500.0), mono: true});
             }
             VoicePart::Alto => {
                 shape_map.insert('&', vec![0.801, 0.755, 0.644, 0.539, 0.451, 0.384, 1.32, 4.11, 5.26, 5.77, 5.23, 4.7, 4.25, 4.47, 4.81, 4.91, 4.86, 4.84, 4.89, 5.13, 5.64, 6.47, 7.18, 6.53, 5.55, 5.31, 4.55, 3.76, 3.19, 2.56, 2.18, 2.35, 2.81, 3.1, 3.35, 3.52, 3.45, 3.09, 2.58, 2.12, 1.68, 1.13, 0.79, 1.43, 2.0]);
@@ -104,27 +82,6 @@ impl Phonemes {
                 shape_map.insert('u', vec![0.701, 0.662, 0.554, 0.477, 0.457, 0.884, 3.58, 5.22, 5.83, 5.54, 5.51, 5.76, 6.28, 6.79, 6.94, 6.85, 6.37, 5.5, 4.78, 4.42, 4.43, 4.32, 3.15, 2.35, 1.9, 1.25, 0.713, 0.444, 0.388, 0.592, 1.19, 1.9, 2.49, 2.93, 3.33, 3.55, 3.63, 6.28, 7.58, 5.04, 2.34, 1.36, 0.601, 0.363, 0.356]);
                 shape_map.insert('y', vec![0.801, 0.752, 0.639, 0.534, 0.445, 0.38, 1.3, 3.76, 4.67, 5.08, 4.59, 4.2, 4.01, 4.51, 5.59, 6.27, 6.9, 7.5, 8.09, 8.8, 8.85, 7.71, 7.32, 6.61, 5.23, 3.94, 2.61, 1.43, 0.774, 0.553, 0.503, 0.544, 0.706, 0.753, 0.808, 0.758, 0.828, 1.03, 1.26, 1.43, 1.57, 1.32, 0.615, 0.322, 0.292]);
                 shape_map.insert('{', vec![0.298, 0.251, 0.318, 0.412, 0.829, 0.933, 1.03, 1.02, 1.09, 1.08, 1.12, 1.19, 1.34, 1.66, 1.79, 1.89, 2.09, 2.37, 2.81, 3.3, 3.61, 3.87, 4.01, 4.1, 4.11, 4.26, 4.38, 4.69, 4.82, 4.85, 4.89, 4.7, 4.5, 4.02, 3.79, 3.69, 3.95, 3.88, 3.76, 3.33, 3.35, 3.42, 3.53, 3.34, 3.19]);
-                consonant_map.insert('b', Consonant {sampa: 'b', start: 0, delay: 100, transition_time: 2700, on_time: 300, off_time: 1500, volume: 0.008, position: 41, filter: ResonantFilter::new(760.0, 4700.0), mono: false});
-                consonant_map.insert('d', Consonant {sampa: 'd', start: 0, delay: 300, transition_time: 3000, on_time: 300, off_time: 1000, volume: 0.006, position: 38, filter: ResonantFilter::new(1300.0, 3000.0), mono: false});
-                consonant_map.insert('f', Consonant {sampa: 'f', start: 0, delay: 2500, transition_time: 4000, on_time: 2000, off_time: 2000, volume: 0.011, position: 41, filter: ResonantFilter::new(1640.0, 5500.0), mono: true});
-                consonant_map.insert('g', Consonant {sampa: 'g', start: 0, delay: 600, transition_time: 2700, on_time: 200, off_time: 750, volume: 0.008, position: 28, filter: ResonantFilter::new(1025.0, 5670.0), mono: true});
-                consonant_map.insert('h', Consonant {sampa: 'h', start: 0, delay: 3000, transition_time: 1000, on_time: 2000, off_time: 4000, volume: 0.003, position: 9, filter: ResonantFilter::new(1090.0, 5500.0), mono: false});
-                consonant_map.insert('j', Consonant {sampa: 'j', start: 0, delay: 0, transition_time: 3000, on_time: 0, off_time: 0, volume: 0.0, position: 1, filter: ResonantFilter::new(4150.0, 6500.0), mono: false});
-                consonant_map.insert('k', Consonant {sampa: 'k', start: 0, delay: 500, transition_time: 1500, on_time: 900, off_time: 1100, volume: 0.012, position: 31, filter: ResonantFilter::new(4150.0, 6500.0), mono: false});
-                consonant_map.insert('p', Consonant {sampa: 'p', start: 0, delay: 1200, transition_time: 500, on_time: 300, off_time: 1500, volume: 0.008, position: 43, filter: ResonantFilter::new(760.0, 4700.0), mono: false});
-                consonant_map.insert('r', Consonant {sampa: 'r', start: 0, delay: 100, transition_time: 2700, on_time: 700, off_time: 900, volume: 0.004, position: 38, filter: ResonantFilter::new(1300.0, 4500.0), mono: false});
-                consonant_map.insert('s', Consonant {sampa: 's', start: 0, delay: 3000, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 42, filter: ResonantFilter::new(5500.0, 1000.0), mono: true});
-                consonant_map.insert('t', Consonant {sampa: 't', start: 0, delay: 300, transition_time: 1500, on_time: 850, off_time: 1500, volume: 0.01, position: 38, filter: ResonantFilter::new(4500.0, 6500.0), mono: false});
-                consonant_map.insert('v', Consonant {sampa: 'v', start: 0, delay: 700, transition_time: 4000, on_time: 2000, off_time: 2000, volume: 0.011, position: 41, filter: ResonantFilter::new(1500.0, 5500.0), mono: true});
-                consonant_map.insert('x', Consonant {sampa: 'x', start: 0, delay: 3000, transition_time: 1000, on_time: 2000, off_time: 4000, volume: 0.005, position: 13, filter: ResonantFilter::new(1090.0, 3300.0), mono: false});
-                consonant_map.insert('z', Consonant {sampa: 'z', start: 0, delay: 100, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 42, filter: ResonantFilter::new(5500.0, 760.0), mono: true});
-                consonant_map.insert('D', Consonant {sampa: 'D', start: 0, delay: 200, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 39, filter: ResonantFilter::new(4900.0, 5500.0), mono: true});
-                consonant_map.insert('S', Consonant {sampa: 'S', start: 0, delay: 3000, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.01, position: 42, filter: ResonantFilter::new(3300.0, 1000.0), mono: true});
-                consonant_map.insert('T', Consonant {sampa: 'T', start: 0, delay: 1500, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 39, filter: ResonantFilter::new(4900.0, 5500.0), mono: true});
-                consonant_map.insert('Z', Consonant {sampa: 'Z', start: 0, delay: 100, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 42, filter: ResonantFilter::new(3300.0, 760.0), mono: true});
-                consonant_map.insert('4', Consonant {sampa: '4', start: 0, delay: 100, transition_time: 2700, on_time: 700, off_time: 900, volume: 0.006, position: 38, filter: ResonantFilter::new(1300.0, 4500.0), mono: false});
-                consonant_map.insert('ʤ', Consonant {sampa: 'ʤ', start: 0, delay: 300, transition_time: 800, on_time: 2100, off_time: 2300, volume: 0.015, position: 40, filter: ResonantFilter::new(2200.0, 1420.0), mono: true});
-                consonant_map.insert('ʧ', Consonant {sampa: 'ʧ', start: 0, delay: 3000, transition_time: 800, on_time: 2100, off_time: 2300, volume: 0.015, position: 40, filter: ResonantFilter::new(2200.0, 1420.0), mono: true});
             }
             VoicePart::Tenor => {
                 shape_map.insert('&', vec![0.801, 0.757, 0.656, 0.553, 0.467, 0.399, 0.654, 2.98, 4.9, 5.66, 5.56, 5.05, 4.53, 4.24, 4.53, 4.82, 4.91, 4.86, 4.83, 4.86, 5.05, 5.44, 6.12, 6.96, 7.14, 5.89, 5.5, 5.12, 4.32, 3.63, 3.12, 2.52, 2.18, 2.32, 2.74, 3.06, 3.27, 3.49, 3.48, 3.31, 2.84, 2.39, 1.96, 1.54, 1.01, 0.804, 1.52, 2.01]);
@@ -151,27 +108,6 @@ impl Phonemes {
                 shape_map.insert('u', vec![0.701, 0.664, 0.564, 0.484, 0.451, 0.598, 2.46, 4.86, 5.59, 5.72, 5.48, 5.57, 5.82, 6.44, 6.83, 6.94, 6.84, 6.4, 5.6, 4.89, 4.45, 4.38, 4.45, 3.8, 2.57, 2.2, 1.67, 1.06, 0.604, 0.415, 0.392, 0.615, 1.18, 1.84, 2.41, 2.86, 3.23, 3.51, 3.53, 4.67, 7.45, 6.88, 3.87, 1.96, 1.18, 0.527, 0.355, 0.357]);
                 shape_map.insert('y', vec![0.801, 0.754, 0.65, 0.548, 0.461, 0.392, 0.668, 2.81, 4.37, 5.04, 4.88, 4.44, 4.11, 4.05, 4.66, 5.63, 6.27, 6.86, 7.42, 7.96, 8.62, 8.97, 8.16, 7.37, 7.13, 6.02, 4.74, 3.53, 2.31, 1.24, 0.736, 0.546, 0.502, 0.534, 0.688, 0.745, 0.805, 0.77, 0.775, 0.924, 1.15, 1.31, 1.53, 1.47, 1.26, 0.527, 0.314, 0.293]);
                 shape_map.insert('{', vec![0.298, 0.25, 0.301, 0.411, 0.738, 0.873, 1.03, 1.02, 1.06, 1.09, 1.09, 1.12, 1.25, 1.36, 1.71, 1.8, 1.89, 2.07, 2.28, 2.8, 3.15, 3.5, 3.8, 3.94, 4.07, 4.1, 4.14, 4.3, 4.48, 4.67, 4.84, 4.85, 4.89, 4.71, 4.56, 4.07, 3.87, 3.66, 3.87, 3.89, 3.84, 3.58, 3.26, 3.43, 3.44, 3.51, 3.32, 3.19]);
-                consonant_map.insert('b', Consonant {sampa: 'b', start: 0, delay: 100, transition_time: 2700, on_time: 300, off_time: 1500, volume: 0.008, position: 44, filter: ResonantFilter::new(730.0, 4500.0), mono: false});
-                consonant_map.insert('d', Consonant {sampa: 'd', start: 0, delay: 300, transition_time: 3000, on_time: 300, off_time: 1000, volume: 0.006, position: 41, filter: ResonantFilter::new(1300.0, 2900.0), mono: false});
-                consonant_map.insert('f', Consonant {sampa: 'f', start: 0, delay: 2500, transition_time: 4000, on_time: 2000, off_time: 2000, volume: 0.011, position: 44, filter: ResonantFilter::new(1560.0, 5200.0), mono: true});
-                consonant_map.insert('g', Consonant {sampa: 'g', start: 0, delay: 600, transition_time: 2700, on_time: 200, off_time: 750, volume: 0.008, position: 30, filter: ResonantFilter::new(1025.0, 5400.0), mono: false});
-                consonant_map.insert('h', Consonant {sampa: 'h', start: 0, delay: 3000, transition_time: 1000, on_time: 2000, off_time: 4000, volume: 0.003, position: 10, filter: ResonantFilter::new(1050.0, 5200.0), mono: false});
-                consonant_map.insert('j', Consonant {sampa: 'j', start: 0, delay: 0, transition_time: 3000, on_time: 0, off_time: 0, volume: 0.0, position: 1, filter: ResonantFilter::new(4150.0, 6500.0), mono: false});
-                consonant_map.insert('k', Consonant {sampa: 'k', start: 0, delay: 500, transition_time: 1500, on_time: 900, off_time: 1100, volume: 0.012, position: 33, filter: ResonantFilter::new(3950.0, 6250.0), mono: false});
-                consonant_map.insert('p', Consonant {sampa: 'p', start: 0, delay: 1200, transition_time: 500, on_time: 300, off_time: 1500, volume: 0.008, position: 46, filter: ResonantFilter::new(730.0, 4500.0), mono: false});
-                consonant_map.insert('r', Consonant {sampa: 'r', start: 0, delay: 100, transition_time: 2700, on_time: 700, off_time: 900, volume: 0.004, position: 41, filter: ResonantFilter::new(1200.0, 4200.0), mono: false});
-                consonant_map.insert('s', Consonant {sampa: 's', start: 0, delay: 3000, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 45, filter: ResonantFilter::new(5200.0, 940.0), mono: true});
-                consonant_map.insert('t', Consonant {sampa: 't', start: 0, delay: 300, transition_time: 1500, on_time: 850, off_time: 1500, volume: 0.01, position: 41, filter: ResonantFilter::new(4300.0, 6250.0), mono: false});
-                consonant_map.insert('v', Consonant {sampa: 'v', start: 0, delay: 700, transition_time: 4000, on_time: 2000, off_time: 2000, volume: 0.011, position: 44, filter: ResonantFilter::new(1460.0, 5200.0), mono: true});
-                consonant_map.insert('x', Consonant {sampa: 'x', start: 0, delay: 3000, transition_time: 1000, on_time: 2000, off_time: 4000, volume: 0.005, position: 15, filter: ResonantFilter::new(1040.0, 3100.0), mono: false});
-                consonant_map.insert('z', Consonant {sampa: 'z', start: 0, delay: 100, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 45, filter: ResonantFilter::new(5200.0, 730.0), mono: true});
-                consonant_map.insert('D', Consonant {sampa: 'D', start: 0, delay: 200, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 42, filter: ResonantFilter::new(4700.0, 5200.0), mono: true});
-                consonant_map.insert('S', Consonant {sampa: 'S', start: 0, delay: 3000, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.01, position: 45, filter: ResonantFilter::new(3100.0, 940.0), mono: true});
-                consonant_map.insert('T', Consonant {sampa: 'T', start: 0, delay: 1500, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 42, filter: ResonantFilter::new(4700.0, 5200.0), mono: true});
-                consonant_map.insert('Z', Consonant {sampa: 'Z', start: 0, delay: 100, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 45, filter: ResonantFilter::new(3100.0, 730.0), mono: true});
-                consonant_map.insert('4', Consonant {sampa: '4', start: 0, delay: 100, transition_time: 2700, on_time: 700, off_time: 900, volume: 0.006, position: 41, filter: ResonantFilter::new(1200.0, 4200.0), mono: false});
-                consonant_map.insert('ʤ', Consonant {sampa: 'ʤ', start: 0, delay: 300, transition_time: 800, on_time: 2100, off_time: 2300, volume: 0.015, position: 43, filter: ResonantFilter::new(2100.0, 1350.0), mono: true});
-                consonant_map.insert('ʧ', Consonant {sampa: 'ʧ', start: 0, delay: 3000, transition_time: 800, on_time: 2100, off_time: 2300, volume: 0.015, position: 43, filter: ResonantFilter::new(2100.0, 1350.0), mono: true});
             }
             VoicePart::Bass => {
                 shape_map.insert('&', vec![0.801, 0.759, 0.662, 0.562, 0.479, 0.41, 0.467, 2.22, 4.58, 5.35, 5.76, 5.26, 4.78, 4.29, 4.3, 4.7, 4.86, 4.9, 4.84, 4.84, 4.88, 5.09, 5.5, 6.18, 6.99, 7.14, 5.92, 5.5, 5.2, 4.45, 3.76, 3.25, 2.68, 2.25, 2.21, 2.56, 2.95, 3.13, 3.39, 3.51, 3.45, 3.16, 2.68, 2.28, 1.87, 1.45, 0.947, 0.842, 1.56, 2.02]);
@@ -198,27 +134,6 @@ impl Phonemes {
                 shape_map.insert('u', vec![0.701, 0.666, 0.569, 0.492, 0.454, 0.523, 1.8, 4.47, 5.36, 5.81, 5.52, 5.47, 5.69, 6.07, 6.67, 6.9, 6.91, 6.76, 6.15, 5.43, 4.76, 4.42, 4.39, 4.43, 3.76, 2.56, 2.21, 1.72, 1.11, 0.668, 0.443, 0.38, 0.515, 0.966, 1.6, 2.19, 2.68, 3.01, 3.38, 3.56, 3.61, 5.84, 7.64, 6.2, 3.22, 1.79, 1.07, 0.502, 0.352, 0.357]);
                 shape_map.insert('y', vec![0.801, 0.755, 0.657, 0.556, 0.473, 0.404, 0.479, 2.13, 4.14, 4.76, 5.07, 4.61, 4.25, 3.98, 4.21, 5.13, 5.84, 6.48, 7.01, 7.57, 8.08, 8.72, 8.95, 8.03, 7.36, 7.12, 6.08, 4.81, 3.7, 2.47, 1.44, 0.808, 0.578, 0.51, 0.507, 0.619, 0.736, 0.768, 0.802, 0.752, 0.819, 0.996, 1.21, 1.35, 1.58, 1.41, 1.19, 0.477, 0.308, 0.293]);
                 shape_map.insert('{', vec![0.298, 0.25, 0.289, 0.411, 0.678, 0.846, 1.02, 1.02, 1.03, 1.1, 1.07, 1.12, 1.14, 1.33, 1.52, 1.74, 1.83, 1.93, 2.13, 2.43, 2.81, 3.25, 3.53, 3.82, 3.94, 4.07, 4.1, 4.12, 4.29, 4.4, 4.68, 4.79, 4.82, 4.89, 4.81, 4.61, 4.3, 3.96, 3.72, 3.69, 3.94, 3.88, 3.8, 3.47, 3.25, 3.46, 3.46, 3.5, 3.31, 3.19]);
-                consonant_map.insert('b', Consonant {sampa: 'b', start: 0, delay: 100, transition_time: 2700, on_time: 300, off_time: 1500, volume: 0.008, position: 46, filter: ResonantFilter::new(700.0, 4300.0), mono: false});
-                consonant_map.insert('d', Consonant {sampa: 'd', start: 0, delay: 300, transition_time: 3000, on_time: 300, off_time: 1000, volume: 0.006, position: 42, filter: ResonantFilter::new(1300.0, 2800.0), mono: false});
-                consonant_map.insert('f', Consonant {sampa: 'f', start: 0, delay: 2500, transition_time: 4000, on_time: 2000, off_time: 2000, volume: 0.011, position: 46, filter: ResonantFilter::new(1500.0, 5000.0), mono: true});
-                consonant_map.insert('g', Consonant {sampa: 'g', start: 0, delay: 600, transition_time: 2700, on_time: 200, off_time: 750, volume: 0.008, position: 32, filter: ResonantFilter::new(1025.0, 5200.0), mono: false});
-                consonant_map.insert('h', Consonant {sampa: 'h', start: 0, delay: 3000, transition_time: 1000, on_time: 2000, off_time: 4000, volume: 0.003, position: 11, filter: ResonantFilter::new(1000.0, 5000.0), mono: false});
-                consonant_map.insert('j', Consonant {sampa: 'j', start: 0, delay: 0, transition_time: 3000, on_time: 0, off_time: 0, volume: 0.0, position: 1, filter: ResonantFilter::new(4150.0, 6500.0), mono: false});
-                consonant_map.insert('k', Consonant {sampa: 'k', start: 0, delay: 500, transition_time: 1500, on_time: 900, off_time: 1100, volume: 0.012, position: 35, filter: ResonantFilter::new(3800.0, 6000.0), mono: false});
-                consonant_map.insert('p', Consonant {sampa: 'p', start: 0, delay: 1200, transition_time: 500, on_time: 300, off_time: 1500, volume: 0.008, position: 48, filter: ResonantFilter::new(700.0, 4300.0), mono: false});
-                consonant_map.insert('r', Consonant {sampa: 'r', start: 0, delay: 100, transition_time: 2700, on_time: 700, off_time: 900, volume: 0.004, position: 43, filter: ResonantFilter::new(1170.0, 4000.0), mono: false});
-                consonant_map.insert('s', Consonant {sampa: 's', start: 0, delay: 3000, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 47, filter: ResonantFilter::new(5000.0, 900.0), mono: true});
-                consonant_map.insert('t', Consonant {sampa: 't', start: 0, delay: 300, transition_time: 1500, on_time: 850, off_time: 1500, volume: 0.01, position: 43, filter: ResonantFilter::new(4100.0, 6000.0), mono: false});
-                consonant_map.insert('v', Consonant {sampa: 'v', start: 0, delay: 700, transition_time: 4000, on_time: 2000, off_time: 2000, volume: 0.011, position: 46, filter: ResonantFilter::new(1400.0, 5000.0), mono: true});
-                consonant_map.insert('x', Consonant {sampa: 'x', start: 0, delay: 3000, transition_time: 1000, on_time: 2000, off_time: 4000, volume: 0.005, position: 16, filter: ResonantFilter::new(1000.0, 3000.0), mono: false});
-                consonant_map.insert('z', Consonant {sampa: 'z', start: 0, delay: 100, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 47, filter: ResonantFilter::new(5000.0, 700.0), mono: true});
-                consonant_map.insert('D', Consonant {sampa: 'D', start: 0, delay: 200, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 44, filter: ResonantFilter::new(4500.0, 5000.0), mono: true});
-                consonant_map.insert('S', Consonant {sampa: 'S', start: 0, delay: 3000, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.01, position: 47, filter: ResonantFilter::new(3000.0, 900.0), mono: true});
-                consonant_map.insert('T', Consonant {sampa: 'T', start: 0, delay: 1500, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 44, filter: ResonantFilter::new(4500.0, 5000.0), mono: true});
-                consonant_map.insert('Z', Consonant {sampa: 'Z', start: 0, delay: 100, transition_time: 3000, on_time: 4000, off_time: 2000, volume: 0.017, position: 47, filter: ResonantFilter::new(3000.0, 700.0), mono: true});
-                consonant_map.insert('4', Consonant {sampa: '4', start: 0, delay: 100, transition_time: 2700, on_time: 700, off_time: 900, volume: 0.006, position: 43, filter: ResonantFilter::new(1170.0, 4000.0), mono: false});
-                consonant_map.insert('ʤ', Consonant {sampa: 'ʤ', start: 0, delay: 300, transition_time: 800, on_time: 2100, off_time: 2300, volume: 0.015, position: 45, filter: ResonantFilter::new(2000.0, 1300.0), mono: true});
-                consonant_map.insert('ʧ', Consonant {sampa: 'ʧ', start: 0, delay: 3000, transition_time: 800, on_time: 2100, off_time: 2300, volume: 0.015, position: 45, filter: ResonantFilter::new(2000.0, 1300.0), mono: true});
             }
         }
         shape_map.insert('b', shape_map.get(&'m').unwrap().clone());
@@ -231,14 +146,6 @@ impl Phonemes {
         nasal_vowels.insert('m');
         nasal_vowels.insert('n');
         nasal_vowels.insert('N');
-        let mut consonant_base_shape = HashMap::new();
-        consonant_base_shape.insert('d', 'l');
-        consonant_base_shape.insert('j', 'e');
-        consonant_base_shape.insert('r', '3');
-        consonant_base_shape.insert('4', '3');
-        consonant_base_shape.insert('S', 'S');
-        consonant_base_shape.insert('ʤ', 'S');
-        consonant_base_shape.insert('ʧ', 'S');
         let mut amplification = HashMap::new();
         amplification.insert('a', 1.2);
         amplification.insert('e', 1.5);
@@ -254,7 +161,56 @@ impl Phonemes {
         amplification.insert('6', 1.3);
         amplification.insert('9', 1.3);
         amplification.insert('&', 1.3);
-        Self { shape_map: shape_map, nasal_vowels: nasal_vowels, consonant_map: consonant_map, consonant_base_shape: consonant_base_shape, amplification: amplification }
+        let mut result = Self { voice_part: voice_part, shape_map: shape_map, nasal_vowels: nasal_vowels, consonant_map: HashMap::new(), amplification: amplification };
+        result.add_consonant('b', 100, 2700, 300, 1500, 0.008, 46, 700.0, 4300.0, false, ' ', 1.0, true);
+        result.add_consonant('d', 300, 3000, 300, 1000, 0.006, 42, 1300.0, 2800.0, false, 'l', 0.5, true);
+        result.add_consonant('f', 2500, 4000, 2000, 2000, 0.011, 46, 1500.0, 5000.0, true, ' ', 1.0, true);
+        result.add_consonant('g', 600, 2700, 200, 750, 0.008, 32, 1025.0, 5200.0, false, ' ', 1.0, true);
+        result.add_consonant('h', 3000, 1000, 2000, 4000, 0.003, 11, 1000.0, 5000.0, false, ' ', 1.0, false);
+        result.add_consonant('j', 0, 3000, 0, 0, 0.0, 1, 4150.0, 6500.0, false, 'e', 0.25, false);
+        result.add_consonant('k', 500, 1500, 900, 1100, 0.012, 35, 3800.0, 6000.0, false, ' ', 1.0, true);
+        result.add_consonant('p', 1200, 500, 300, 1500, 0.008, 48, 700.0, 4300.0, false, ' ', 1.0, true);
+        result.add_consonant('r', 100, 2700, 700, 900, 0.004, 43, 1170.0, 4000.0, false, '3', 0.2, true);
+        result.add_consonant('s', 3000, 3000, 4000, 2000, 0.017, 47, 5000.0, 900.0, true, ' ', 1.0, true);
+        result.add_consonant('t', 300, 1500, 850, 1500, 0.01, 43, 4100.0, 6000.0, false, ' ', 1.0, true);
+        result.add_consonant('v', 700, 4000, 2000, 2000, 0.011, 46, 1400.0, 5000.0, true, ' ', 1.0, true);
+        result.add_consonant('x', 3000, 1000, 2000, 4000, 0.005, 16, 1000.0, 3000.0, false, ' ', 1.0, false);
+        result.add_consonant('z', 100, 3000, 4000, 2000, 0.017, 47, 5000.0, 700.0, true, ' ', 1.0, true);
+        result.add_consonant('D', 200, 3000, 4000, 2000, 0.017, 44, 4500.0, 5000.0, true, ' ', 1.0, true);
+        result.add_consonant('S', 3000, 3000, 4000, 2000, 0.01, 47, 3000.0, 900.0, true, 'S', 0.2, true);
+        result.add_consonant('T', 1500, 3000, 4000, 2000, 0.017, 44, 4500.0, 5000.0, true, ' ', 1.0, true);
+        result.add_consonant('Z', 100, 3000, 4000, 2000, 0.017, 47, 3000.0, 700.0, true, ' ', 1.0, true);
+        result.add_consonant('4', 100, 2700, 700, 900, 0.006, 43, 1170.0, 4000.0, false, '3', 0.2, true);
+        result.add_consonant('ʤ', 300, 800, 2100, 2300, 0.015, 45, 2000.0, 1300.0, true, 'S', 0.0, true);
+        result.add_consonant('ʧ', 3000, 800, 2100, 2300, 0.015, 45, 2000.0, 1300.0, true, 'S', 0.0, true);
+        result
+    }
+
+    /// Register a consonant.  All parameters should correspond to bass.  Other voice parts scale
+    /// them automatically.
+    fn add_consonant(&mut self, sampa: char, delay: i64, transition_time: i64, on_time: i64, off_time: i64,
+                     volume: f32, position: usize, frequency: f32, bandwidth: f32, mono: bool, base_shape: char,
+                     blend: f32, constrict: bool) {
+        let length = match self.voice_part {
+            VoicePart::Soprano => 42.0,
+            VoicePart::Alto => 45.0,
+            VoicePart::Tenor => 48.0,
+            VoicePart::Bass => 50.0
+        };
+        let ratio = 50.0/length;
+        self.consonant_map.insert(sampa, Consonant {
+            sampa: sampa,
+            start: 0,
+            delay: delay,
+            transition_time: transition_time,
+            on_time: on_time,
+            off_time: off_time,
+            volume: volume,
+            position: (position as f32/ratio).round() as usize,
+            filter: ResonantFilter::new(frequency*ratio, bandwidth*ratio),
+            mono: mono,
+            shape: ConsonantShape {base_shape: base_shape, blend: blend, constrict: constrict}
+        });
     }
 
     /// Get the vocal tract shape (cross-sectional areas for each segment) corresponding to a vowel.
@@ -288,18 +244,33 @@ impl Phonemes {
         }
     }
 
-    /// Get the vocal tract shape to use when pronouncing a consonant.  In most cases, this
-    /// is created by taking the shape of the adjacent vowel, then narrowing it to create a
+    /// Get the vocal tract shape to use when pronouncing a consonant.  This is created by blending
+    /// the consonant's base shape with that of the adjacent vowel, then narrowing it to create a
     /// constriction at the point where the noise is generated.
     pub fn get_consonant_shape(&self, consonant: &Consonant, adjacent_vowel: char) -> Option<Vec<f32>> {
-        let mut shape = match self.consonant_base_shape.get(&consonant.sampa) {
-            Some(s) => self.shape_map.get(&s).unwrap().clone(),
-            None => self.shape_map.get(&adjacent_vowel)?.clone()
-        };
-        if shape[consonant.position] == 0.0 {
-            shape = self.shape_map.get(&'y')?.clone();
+        // Blend the consonant's base shape with the shape of the adjacent vowel.
+
+        let blend = consonant.shape.blend;
+        let mut shape;
+        if blend == 0.0 {
+            shape = self.shape_map.get(&consonant.shape.base_shape).unwrap().clone();
         }
-        else if consonant.position > shape.len()/2 {
+        else {
+            shape = self.shape_map.get(&adjacent_vowel)?.clone();
+            if shape[consonant.position] == 0.0 {
+                shape = self.shape_map.get(&'y')?.clone();
+            }
+            if blend < 1.0 {
+                let shape2 = self.shape_map.get(&consonant.shape.base_shape).unwrap();
+                for i in 0..shape.len() {
+                    shape[i] = blend*shape[i] + (1.0-blend)*shape2[i];
+                }
+            }
+        }
+
+        // Add a constriction at the point where the sound originates.
+
+        if consonant.shape.constrict {
             for i in 0..9 {
                 shape[consonant.position-i] *= (i+1) as f32 * 0.1;
             }
@@ -331,12 +302,25 @@ impl Phonemes {
     }
 }
 
+/// A description of how to form the vocal tract shape.  This involves
+///
+/// 1. Starting from a fixed shape specific to the consonant.
+/// 2. Blending it with the shape of the adjacent vowel.
+/// 3. Constricting the vocal tract at the position of the noise source.
+#[derive(Copy, Clone)]
+pub struct ConsonantShape {
+    pub base_shape: char,
+    pub blend: f32,
+    pub constrict: bool
+}
+
 /// A description of how to pronounce a consonant.  This involves
 ///
 /// 1. Generating white noise.
 /// 2. Applying an envelope to it.
 /// 3. Passing it through a resonant filter to shape the spectrum.
 /// 4. Injecting it into the vocal tract at a particular point.
+/// 5. Adjusting the shape of the vocal tract.
 #[derive(Copy, Clone)]
 pub struct Consonant {
     pub sampa: char,
@@ -348,5 +332,6 @@ pub struct Consonant {
     pub volume: f32,
     pub position: usize,
     pub filter: ResonantFilter,
-    pub mono: bool
+    pub mono: bool,
+    pub shape: ConsonantShape
 }
