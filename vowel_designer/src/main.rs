@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use eframe::egui::{self, CentralPanel, epaint};
+use eframe::egui::{self, CentralPanel, Pos2, pos2, Rect, Sense, Shape, Vec2, epaint};
 use eframe::{App, NativeOptions};
 
 // Copyright 2025 by Peter Eastman
@@ -32,6 +32,8 @@ struct Player {
     voice_count: usize,
     shape_map: BTreeMap<&'static str, Vec<f32>>,
     weights: BTreeMap<&'static str, f32>,
+    handles: [Pos2; 3],
+    base_shape: Vec<f32>,
     shape: Vec<f32>,
     step: i64,
     current_note: u8,
@@ -47,6 +49,8 @@ impl Player {
             voice_count: 1,
             shape_map: BTreeMap::new(),
             weights: BTreeMap::new(),
+            handles: [pos2(0.25, 0.0), pos2(0.5, 0.0), pos2(0.75, 0.0)],
+            base_shape: vec![],
             shape: vec![],
             step: 0,
             current_note: 0,
@@ -68,6 +72,16 @@ impl Player {
                 let s = &self.shape_map[key];
                 for i in 0..s.len() {
                     shape[i] += (weight/total_weight)*s[i];
+                }
+            }
+        }
+        self.base_shape = shape.clone();
+        for handle in self.handles {
+            for i in 0..shape.len() {
+                let x = handle.x - (i as f32 / (shape.len()-1) as f32);
+                shape[i] += handle.y * (-x*x/0.01).exp();
+                if self.base_shape[i] > 0.0 {
+                    shape[i] = f32::max(shape[i], 0.1);
                 }
             }
         }
@@ -380,20 +394,52 @@ impl App for MainGui {
                     }
                     ui.add_space(10.0);
                 }
+                ui.end_row();
+                for handle in player.handles {
+                    ui.label(format!("{:.3}, {:.3}", handle.x, handle.y));
+                }
             });
             let painter = ui.painter();
             let bounds = ui.available_rect_before_wrap();
-            let stroke = epaint::PathStroke::new(1.0, egui::Color32::BLACK);
-            painter.hline(egui::Rangef::new(bounds.min.x, bounds.max.x), bounds.max.y, stroke.clone());
-            let mut points = Vec::new();
+            let black_stroke = epaint::PathStroke::new(1.0, egui::Color32::BLACK);
+            let gray_stroke = epaint::PathStroke::new(1.0, egui::Color32::GRAY);
+            painter.hline(egui::Rangef::new(bounds.min.x, bounds.max.x), bounds.max.y, black_stroke.clone());
+            painter.hline(egui::Rangef::new(bounds.min.x, bounds.max.x), (bounds.min.y+bounds.max.y)/2.0, gray_stroke.clone());
+
+            // Draw the handles.
+
+            let response = ui.response();
+            for (i, handle) in player.handles.iter_mut().enumerate() {
+                let mut pos = pos2(bounds.min.x + handle.x*(bounds.max.x-bounds.min.x), (bounds.min.y+bounds.max.y)/2.0 - 0.2*handle.y*(bounds.max.y-bounds.min.y));
+                let point_rect = Rect::from_center_size(pos, Vec2::new(5.0, 5.0));
+                let point_id = response.id.with(i);
+                let point_response = ui.interact(point_rect, point_id, Sense::drag());
+                painter.add(Shape::circle_filled(pos, 5.0, egui::Color32::GRAY));
+                pos += point_response.drag_delta();
+                handle.x = (pos.x-bounds.min.x)/(bounds.max.x-bounds.min.x);
+                handle.y = -(pos.y-(bounds.min.y+bounds.max.y)/2.0)/(0.2*(bounds.max.y-bounds.min.y));
+                handle.x = f32::max(0.0, f32::min(1.0, handle.x));
+                if point_response.dragged() {
+                    shape_changed = true;
+                }
+            }
+
+            // Draw the curves.
+
+            let mut points1 = Vec::new();
+            let mut points2 = Vec::new();
             let xscale = (bounds.max.x-bounds.min.x) / player.shape.len() as f32;
             let yscale = (bounds.max.y-bounds.min.y) / 10.0;
             for i in 0..player.shape.len() {
                 let x = bounds.min.x + i as f32 * xscale;
-                let y = bounds.max.y - player.shape[i]*yscale;
-                points.push(egui::Pos2::new(x, y));
+                let y1 = bounds.max.y - player.base_shape[i]*yscale;
+                let y2 = bounds.max.y - player.shape[i]*yscale;
+                points1.push(egui::Pos2::new(x, y1));
+                points2.push(egui::Pos2::new(x, y2));
             }
-            painter.line(points, stroke.clone());
+            painter.line(points1, gray_stroke.clone());
+            painter.line(points2, black_stroke.clone());
+
             if shape_changed {
                 player.update_shape();
             }
@@ -423,7 +469,7 @@ fn main() -> Result<(), eframe::Error> {
     let options = NativeOptions::default();
     let gui = MainGui {
         player_ref: Arc::clone(&player)
-};
+    };
     eframe::run_native(
         "Chorus",
         options,
