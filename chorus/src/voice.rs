@@ -211,7 +211,7 @@ impl Voice {
             VoicePart::Soprano => {
                 vocal_length = 42;
                 coupling_position = 22;
-                vibrato_frequency = 6.3;
+                vibrato_frequency = 6.0;
                 nasal_shape = vec![1.52, 1.71, 2.08, 2.78, 3.53, 4.28, 4.33, 2.89, 2.49, 2.42, 2.13, 1.95, 1.83, 1.74, 1.41, 0.878, 0.769, 1.15, 1.12, 1.09, 1.06, 0.672];
             }
             VoicePart::Alto => {

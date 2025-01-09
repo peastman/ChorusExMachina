@@ -14,7 +14,7 @@
 // If not, see <https://www.gnu.org/licenses/>.
 
 const VOWELS: &str = "aeilmnouyAEINOUVY239&{@";
-const CONSONANTS: &str = "bdfghjkprstvxzDSTZ4ʤʧ";
+const CONSONANTS: &str = "bdfghjkprstvwxzDSTZ4ʤʧ";
 
 /// A Syllable consists of:
 ///

@@ -14,7 +14,7 @@
 // If not, see <https://www.gnu.org/licenses/>.
 
 use crate::voice::Voice;
-use crate::filter::{Filter, ResonantFilter};
+use crate::filter::Filter;
 use crate::phonemes::{Consonant, Phonemes};
 use crate::random::Random;
 use crate::syllable::Syllable;
@@ -325,7 +325,7 @@ impl Director {
         // Adjust the envelope for the new note.  If accent is enabled, overshoot it then come back down.
 
         let amplification = self.phonemes.get_amplification(new_syllable.main_vowel);
-        let max_amplitude = if self.accent {amplification*(1.0+4.0*velocity)} else {amplification};
+        let max_amplitude = if self.accent {amplification*(1.0+2.5*velocity)} else {amplification};
         let attack_time = 1000+(10000.0*(1.0-self.attack_rate)) as i64;
         self.add_transition(delay, attack_time, TransitionData::EnvelopeChange {
             start_envelope: self.envelope_after_transitions,
@@ -434,18 +434,6 @@ impl Director {
     /// Play a consonant.  This adds a Consonant to the queue, and if necessary also adds a
     /// Transition to control the vocal tract shape appropriately.
     fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool) -> (i64, i64) {
-        // let mut consonant = Consonant {
-        //     sampa: c,
-        //     start: self.step+delay,
-        //     delay: self.consonant_delay,
-        //     transition_time: self.vowel_transition_time,
-        //     on_time: self.consonant_on_time,
-        //     off_time: self.consonant_off_time,
-        //     volume: self.consonant_volume2,
-        //     position: self.consonant_position,
-        //     filter: ResonantFilter::new(self.consonant_frequency, self.consonant_bandwidth),
-        //     mono: false
-        // };
         let mut consonant = self.phonemes.get_consonant(c).unwrap();
         consonant.start = self.step+delay;
         consonant.volume *= 2.0*self.consonant_volume;
@@ -462,8 +450,8 @@ impl Director {
             let start_shape = self.phonemes.get_consonant_shape(&consonant, vowel).unwrap().clone();
             let end_shape = (if is_final {&start_shape} else {self.phonemes.get_vowel_shape(vowel).unwrap()}).clone();
             let nasal_coupling = self.phonemes.get_nasal_coupling(vowel);
-            self.add_shape_transition(delay, 0, start_shape, 0.0);
-            self.add_shape_transition(delay, self.vowel_transition_time, end_shape, nasal_coupling);
+            self.add_shape_transition(delay, 1000, start_shape, 0.0);
+            self.add_shape_transition(delay+1000, self.vowel_transition_time, end_shape, nasal_coupling);
         }
         (delay_to_consonant, delay_to_vowel)
     }

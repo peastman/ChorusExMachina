@@ -68,6 +68,7 @@ The following consonants are supported.
 | s | **s**eem | |
 | t | **t**in | |
 | v | **v**est | |
+| w | **w**est | |
 | x | lo**ch** | |
 | z | **z**oo | |
 | 4 | ca**r**o (Spanish) | See note on the letter R below |
