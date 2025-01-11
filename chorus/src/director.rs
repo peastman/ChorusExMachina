@@ -184,7 +184,10 @@ impl Director {
         self.transitions.clear();
         self.current_note = None;
         self.consonants.clear();
-        self.consonant_delays = vec![0; voice_count];
+        self.consonant_delays = Vec::new();
+        for _ in 0..voice_count {
+            self.consonant_delays.push((self.random.get_int()%1000) as i64);
+        }
         self.voice_pan = vec![0.0; voice_count];
         self.envelope = 0.0;
         self.bend = 1.0;
@@ -441,7 +444,7 @@ impl Director {
             consonant.off_time = (consonant.off_time as f32 * 0.8) as i64;
         }
         let delay_to_consonant = consonant.delay+consonant.on_time+consonant.off_time;
-        let delay_to_vowel = consonant.delay+consonant.transition_time;
+        let delay_to_vowel = consonant.delay;
         if !consonant.mono {
             consonant.volume /= (self.voices.len() as f32).sqrt();
         }
@@ -564,7 +567,7 @@ impl Director {
                 self.consonants.remove(0);
                 for i in 0..self.consonant_delays.len() {
                     if i != self.consonant_delays.len()/2 {
-                        self.consonant_delays[i] = (self.random.get_int()%500) as i64;
+                        self.consonant_delays[i] = (self.random.get_int()%1000) as i64;
                     }
                 }
             }
