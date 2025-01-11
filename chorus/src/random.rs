@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License along with Chorus Ex Machina.
 // If not, see <https://www.gnu.org/licenses/>.
 
-use std::time::{SystemTime, UNIX_EPOCH};
+use getrandom::getrandom;
 
 const UNIFORM_SCALE: f32 = 1.0/(0x100000000i64 as f32);
 
@@ -30,11 +30,17 @@ impl Random {
     pub fn new() -> Self {
         // Select a seed.
 
-        let time = SystemTime::now().duration_since(UNIX_EPOCH);
-        let seed = match time {
-            Ok(t) => t.subsec_nanos(),
-            Err(_) => 0
-        };
+        let mut data = [0u8; 4];
+        let mut seed = 0;
+        if let Ok(_) = getrandom(&mut data) {
+            for i in 0..4 {
+                seed += (data[i] as u32) << 8*i;
+            }
+        }
+        else {
+            // This should only happen in strange situations when something went wrong
+            // at the OS level.  Just use 0.
+        }
         Self {i: seed, next_normal: 0.0, next_normal_valid: false}
     }
 
