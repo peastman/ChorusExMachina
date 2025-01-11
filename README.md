@@ -14,3 +14,6 @@ cargo xtask bundle chorus_ex_machina --release
 
 To build the AUv2 plugin, first build the CLAP plugin then follow the instructions in
 the `au` subdirectory.
+
+For instructions on how to use the plugin, see [the documentation](plugin/src/help.md),
+which is also available in the plugin's user interface.
