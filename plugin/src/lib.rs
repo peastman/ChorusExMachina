@@ -222,6 +222,7 @@ impl Plugin for ChorusExMachina {
             self.last_syllable_index = -1;
         }
         for (sample_id, channel_samples) in buffer.iter_samples().enumerate() {
+            let mut send_note_off = false;
             while let Some(event) = next_event {
                 if event.timing() != sample_id as u32 {
                     break;
@@ -229,7 +230,8 @@ impl Plugin for ChorusExMachina {
                 match event {
                     NoteEvent::NoteOn { note, velocity, .. } => {
                         let phrase = self.params.phrases.lock().unwrap()[self.params.selected_phrase.value() as usize].clone();
-                        let syllables: Vec<&str> = phrase.split_whitespace().collect();
+                        let replaced = phrase.replace(".", " ");
+                        let syllables: Vec<&str> = replaced.split_whitespace().collect();
                         if self.params.advance_syllable.value() {
                             self.last_syllable_index = (self.last_syllable_index+1)%syllables.len() as i32;
                         }
@@ -244,10 +246,15 @@ impl Plugin for ChorusExMachina {
                             let _ = sender.send(Message::NoteOn {syllable: syllables[syllable_index].to_string(), note_index: note as i32, velocity: velocity});
                             self.last_note = note;
                         }
+
+                        // If we get both a NoteOn and a NoteOff and the same time, skip the NoteOff
+                        // to allow legato playing.
+
+                        send_note_off = false;
                     },
                     NoteEvent::NoteOff { note, .. } => {
                         if note == self.last_note {
-                            let _ = sender.send(Message::NoteOff);
+                            send_note_off = true;
                         }
                     },
                     NoteEvent::MidiPitchBend { value, .. } => {
@@ -256,6 +263,9 @@ impl Plugin for ChorusExMachina {
                     _ => (),
                 }
                 next_event = context.next_event();
+            }
+            if send_note_off {
+                let _ = sender.send(Message::NoteOff);
             }
             let left;
             let right;
