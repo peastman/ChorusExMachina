@@ -27,13 +27,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install libasound2-dev
           sudo apt-get install libudev-dev
-          sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev
+          sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev libx11-xcb1
 
       - run: cargo test --release
 
       - run: cargo xtask bundle chorus_ex_machina --release
 
-      - if: startsWith(matrix.os, 'macos')
+      - name: Build zip
+        if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
         run: |
           cd target/bundled
           zip -r ../../zip.zip chorus_ex_machina.clap chorus_ex_machina.vst3
+
+      - name: Build zip
+        if: startsWith(matrix.os, 'windows')
+        run: |
+          cd target\bundled
+          zip -r ..\..\zip.zip chorus_ex_machina.clap chorus_ex_machina.vst3
