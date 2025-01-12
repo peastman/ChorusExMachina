@@ -34,11 +34,11 @@ jobs:
       - run: cargo xtask bundle chorus_ex_machina --release
 
       - name: Build zip
-      - uses: thedoctor0/zip-release@0.7.5
-      - with:
-        - type: 'zip'
-        - filename: '../../chorus_ex_machina.zip'
-        - directory: target/bundled
+        uses: thedoctor0/zip-release@0.7.5
+        with:
+          type: 'zip'
+          filename: '../../chorus_ex_machina.zip'
+          directory: target/bundled
 
       # - name: Build zip
       #   if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
