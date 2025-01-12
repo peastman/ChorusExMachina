@@ -59,15 +59,15 @@ jobs:
           filename: '../../chorus_ex_machina-${{zipname}}.zip'
           directory: target/bundled
 
-      - name: Build audio unit
-        if: startsWith(matrix.os, 'macos')
-        run: |
-          cd au
-          mkdir build
-          cd build
-          cmake ..
-          make
-          zip -r ../chorus_ex_machina-${{zipname}}.zip "Chorus Ex Machina.component"
+      # - name: Build audio unit
+      #   if: startsWith(matrix.os, 'macos')
+      #   run: |
+      #     cd au
+      #     mkdir build
+      #     cd build
+      #     cmake ..
+      #     make
+      #     zip -r ../chorus_ex_machina-${{zipname}}.zip "Chorus Ex Machina.component"
 
       # - name: Upload plugins
       #   uses: actions/upload-artifact@v4
