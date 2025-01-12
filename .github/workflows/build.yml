@@ -76,4 +76,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: chorus_ex_machina-${{matrix.zipname}}.zip
-          path: .
+          path: chorus_ex_machina-${{matrix.zipname}}.zip
