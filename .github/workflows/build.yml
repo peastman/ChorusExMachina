@@ -33,7 +33,7 @@ jobs:
 
       - run: cargo xtask bundle chorus_ex_machina --release
 
-      - if: !startsWith(matrix.os, 'windows')
+      - if: startsWith(matrix.os, 'macos')
         run: |
-        cd target/bundled
-        zip -r ../../zip.zip chorus_ex_machina.clap chorus_ex_machina.vst3
+          cd target/bundled
+          zip -r ../../zip.zip chorus_ex_machina.clap chorus_ex_machina.vst3
