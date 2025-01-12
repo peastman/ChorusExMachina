@@ -15,11 +15,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, macos-13, ubuntu-20.04, windows-latest]
-        # include:
-        #   - name: Mac ARM
-        #     os: macos-latest
-        #     zipname: mac-arm
+        # os: [macos-latest, macos-13, ubuntu-20.04, windows-latest]
+        include:
+          - name: Mac ARM
+            os: macos-latest
+            zipname: mac-arm
 
         #   - name: Mac x86
         #     os: macos-13
