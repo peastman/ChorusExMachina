@@ -59,8 +59,8 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
         run: |
           mkdir plugins
-          mv target/bundled/chorus_ex_machina.vst3 plugins
-          mv target/bundled/chorus_ex_machina.clap plugins
+          cp -R target/bundled/chorus_ex_machina.vst3 plugins
+          cp -R target/bundled/chorus_ex_machina.clap plugins
 
       - name: Add plugins to output
         if: startsWith(matrix.os, 'windows')
