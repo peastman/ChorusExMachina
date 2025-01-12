@@ -1,0 +1,26 @@
+name: Build-Plugins
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+  build:
+    runs-on: ${{matrix.os}}
+    name: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: [macos-latest, macos-13, ubuntu-20.04, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - run: cargo test --release
+
+      - run: cargo xtask bundle chorus_ex_machina --release
