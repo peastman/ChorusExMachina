@@ -53,12 +53,12 @@ jobs:
       - name: Build plugins
         run: cargo xtask bundle chorus_ex_machina --release
 
-      # - name: Add plugins to zip
-      #   uses: thedoctor0/zip-release@0.7.5
-      #   with:
-      #     type: 'zip'
-      #     filename: '../../chorus_ex_machina-${{zipname}}.zip'
-      #     directory: target/bundled
+      - name: Add plugins to zip
+        uses: thedoctor0/zip-release@0.7.5
+        with:
+          type: 'zip'
+          filename: '../../chorus_ex_machina-${{zipname}}.zip'
+          directory: target/bundled
 
       # - name: Build audio unit
       #   if: startsWith(matrix.os, 'macos')
