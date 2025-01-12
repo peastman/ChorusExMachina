@@ -15,22 +15,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: Mac ARM
-            os: macos-latest
-            zipname: mac-arm
+        os: [macos-latest, macos-13, ubuntu-20.04, windows-latest]
+        # include:
+        #   - name: Mac ARM
+        #     os: macos-latest
+        #     zipname: mac-arm
 
-          - name: Mac x86
-            os: macos-13
-            zipname: mac-x86
+        #   - name: Mac x86
+        #     os: macos-13
+        #     zipname: mac-x86
 
-          - name: Linux x86
-            os: ubuntu-20.04
-            zipname: linux-x86
+        #   - name: Linux x86
+        #     os: ubuntu-20.04
+        #     zipname: linux-x86
 
-          - name: Windows x86
-            os: windows-latest
-            zipname: windows-x86
+        #   - name: Windows x86
+        #     os: windows-latest
+        #     zipname: windows-x86
 
     steps:
       - uses: actions/checkout@v3
@@ -52,12 +53,12 @@ jobs:
       - name: Build plugins
         run: cargo xtask bundle chorus_ex_machina --release
 
-      - name: Add plugins to zip
-        uses: thedoctor0/zip-release@0.7.5
-        with:
-          type: 'zip'
-          filename: '../../chorus_ex_machina-${{zipname}}.zip'
-          directory: target/bundled
+      # - name: Add plugins to zip
+      #   uses: thedoctor0/zip-release@0.7.5
+      #   with:
+      #     type: 'zip'
+      #     filename: '../../chorus_ex_machina-${{zipname}}.zip'
+      #     directory: target/bundled
 
       # - name: Build audio unit
       #   if: startsWith(matrix.os, 'macos')
