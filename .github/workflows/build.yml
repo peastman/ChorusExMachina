@@ -29,9 +29,9 @@ jobs:
             os: ubuntu-20.04
             zipname: linux-x86
 
-        #   - name: Windows x86
-        #     os: windows-latest
-        #     zipname: windows-x86
+          - name: Windows x86
+            os: windows-latest
+            zipname: windows-x86
 
     steps:
       - uses: actions/checkout@v3
