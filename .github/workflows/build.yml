@@ -56,7 +56,7 @@ jobs:
         run: cargo xtask bundle chorus_ex_machina --release
 
       - name: Add plugins to output
-        if: startsWith(matrix.os, 'ubuntu') || if: startsWith(matrix.os, 'macos')
+        if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
         run: |
           mkdir plugins
           mv target/bundled/chorus_ex_machina.vst3 plugins
