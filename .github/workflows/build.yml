@@ -68,7 +68,7 @@ jobs:
           cd au
           mkdir build
           cd build
-          cmake ..
+          cmake .. -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0
           make
           zip -r ../chorus_ex_machina-${{matrix.zipname}}.zip "Chorus Ex Machina.component"
 
