@@ -15,39 +15,62 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, macos-13, ubuntu-20.04, windows-latest]
+        include:
+          - name: Mac ARM
+            os: macos-latest
+            zipname: mac-arm
+
+          - name: Mac x86
+            os: macos-13
+            zipname: mac-x86
+
+          - name: Linux x86
+            os: ubuntu-20.04
+            zipname: linux-x86
+
+          - name: Windows x86
+            os: windows-latest
+            zipname: windows-x86
 
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
 
-      - if: startsWith(matrix.os, 'ubuntu')
+      - name: Install Linux dependencies
+        if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
-          sudo apt-get install libasound2-dev
-          sudo apt-get install libudev-dev
+          sudo apt-get install libasound2-dev apt-get install libudev-dev
           sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev libx11-xcb1 libx11-xcb-dev
+          sudo apt-get install jack
 
-      - run: cargo test --release
+      - name: Run tests
+        run: cargo test --release
 
-      - run: cargo xtask bundle chorus_ex_machina --release
+      - name: Build plugins
+        run: cargo xtask bundle chorus_ex_machina --release
 
-      - name: Build zip
+      - name: Add plugins to zip
         uses: thedoctor0/zip-release@0.7.5
         with:
           type: 'zip'
-          filename: '../../chorus_ex_machina.zip'
+          filename: '../../chorus_ex_machina-${{zipname}}.zip'
           directory: target/bundled
 
-      # - name: Build zip
-      #   if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
-      #   run: |
-      #     cd target/bundled
-      #     zip -r ../../zip.zip chorus_ex_machina.clap chorus_ex_machina.vst3
+      - name: Build audio unit
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          cd au
+          mkdir build
+          cd build
+          cmake ..
+          make
+          zip -r ../chorus_ex_machina-${{zipname}}.zip "Chorus Ex Machina.component"
 
-      # - name: Build zip
-      #   if: startsWith(matrix.os, 'windows')
-      #   run: |
-      #     cd target\bundled
-      #     zip -r ..\..\zip.zip chorus_ex_machina.clap chorus_ex_machina.vst3
+      # - name: Upload plugins
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: chorus_ex_machina-${{zipname}}.zip
+      #     path: .
