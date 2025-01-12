@@ -72,8 +72,8 @@ jobs:
           make
           zip -r ../chorus_ex_machina-${{matrix.zipname}}.zip "Chorus Ex Machina.component"
 
-      # - name: Upload plugins
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: chorus_ex_machina-${{zipname}}.zip
-      #     path: .
+      - name: Upload plugins
+        uses: actions/upload-artifact@v4
+        with:
+          name: chorus_ex_machina-${{matrix.zipname}}.zip
+          path: .
