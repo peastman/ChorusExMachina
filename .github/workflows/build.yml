@@ -27,6 +27,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install libasound2-dev
           sudo apt-get install libudev-dev
+          sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev
 
       - run: cargo test --release
 
