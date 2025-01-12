@@ -1,0 +1,86 @@
+name: Build-Plugins
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+  build:
+    runs-on: ${{matrix.os}}
+    name: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        # os: [macos-latest, macos-13, ubuntu-20.04, windows-latest]
+        include:
+          - name: Mac ARM
+            os: macos-latest
+            zipname: mac-arm
+
+          - name: Mac x86
+            os: macos-13
+            zipname: mac-x86
+
+          - name: Linux x86
+            os: ubuntu-20.04
+            zipname: linux-x86
+
+          - name: Windows x86
+            os: windows-latest
+            zipname: windows-x86
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'true'
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install Linux dependencies
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install libasound2-dev libudev-dev
+          sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev libx11-xcb1 libx11-xcb-dev
+          sudo apt-get install libjack0 libjack-dev
+
+      - name: Run tests
+        run: cargo test --release
+
+      - name: Build plugins
+        run: cargo xtask bundle chorus_ex_machina --release
+
+      - name: Add plugins to output
+        if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
+        run: |
+          mkdir plugins
+          cp -R target/bundled/chorus_ex_machina.vst3 plugins
+          cp -R target/bundled/chorus_ex_machina.clap plugins
+
+      - name: Add plugins to output
+        if: startsWith(matrix.os, 'windows')
+        run: |
+          mkdir plugins
+          move target\bundled\chorus_ex_machina.vst3 plugins
+          move target\bundled\chorus_ex_machina.clap plugins
+
+      - name: Build audio unit
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          cd au
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0
+          make
+          mv "Chorus Ex Machina.component" ../../plugins
+
+      - name: Upload plugins
+        uses: actions/upload-artifact@v4
+        with:
+          name: chorus_ex_machina-${{matrix.zipname}}
+          path: plugins
