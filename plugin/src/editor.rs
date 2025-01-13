@@ -50,12 +50,14 @@ pub fn draw_editor(params: Arc<ChorusExMachinaParams>, sender: Arc<Mutex<mpsc::S
         |_, _| {},
         move |ctx, setter, _state| {
             egui::CentralPanel::default().show(ctx, |ui| {
-                egui::SidePanel::left("tabs").show_inside(ui, |ui| {
+                egui::SidePanel::left("tabs").max_width(100.0).resizable(false).show_inside(ui, |ui| {
                     let mut state = state.lock().unwrap();
-                    ui.selectable_value(&mut state.current_panel, Panel::Controls, "Controls");
-                    ui.selectable_value(&mut state.current_panel, Panel::Text, "Text");
-                    ui.selectable_value(&mut state.current_panel, Panel::Help, "Help");
-                    ui.selectable_value(&mut state.current_panel, Panel::About, "About");
+                    ui.vertical_centered_justified(|ui| {
+                        ui.selectable_value(&mut state.current_panel, Panel::Controls, "Controls");
+                        ui.selectable_value(&mut state.current_panel, Panel::Text, "Text");
+                        ui.selectable_value(&mut state.current_panel, Panel::Help, "Help");
+                        ui.selectable_value(&mut state.current_panel, Panel::About, "About");
+                    })
                 });
                 egui::CentralPanel::default().show_inside(ui, |ui| {
                     let mut state = state.lock().unwrap();
