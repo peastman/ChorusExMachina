@@ -386,7 +386,7 @@ impl Director {
         }
         if consonants.len() > 0 {
             if let Some(vowel) = final_vowel {
-                let consonant = self.phonemes.get_consonant(*consonants.last().unwrap()).unwrap();
+                let consonant = self.phonemes.get_consonant(*consonants.last().unwrap(), true).unwrap();
                 let consonant_shape = self.phonemes.get_consonant_shape(&consonant, vowel);
                 if consonant_shape.is_some() {
                     self.add_shape_transition(delay, 1500, consonant_shape.unwrap().clone(), 0.0);
@@ -437,7 +437,7 @@ impl Director {
     /// Play a consonant.  This adds a Consonant to the queue, and if necessary also adds a
     /// Transition to control the vocal tract shape appropriately.
     fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool) -> (i64, i64) {
-        let mut consonant = self.phonemes.get_consonant(c).unwrap();
+        let mut consonant = self.phonemes.get_consonant(c, is_final).unwrap();
         consonant.start = self.step+delay;
         consonant.volume *= 2.0*self.consonant_volume;
         if is_final {
