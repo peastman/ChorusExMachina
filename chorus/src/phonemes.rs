@@ -188,6 +188,7 @@ impl Phonemes {
         result.add_consonant('d', 0, 4000, 300, 1000, 0.007, 42, 1300.0, 4500.0, false, 't', 0.1, true, false);
         result.add_consonant('d', 0, 4000, 300, 1000, 0.005, 42, 1300.0, 4500.0, false, 't', 0.4, true, true);
         result.add_consonant('f', 2500, 4000, 2000, 2000, 0.011, 46, 1500.0, 5000.0, true, ' ', 1.0, true, false);
+        result.add_consonant('f', 2500, 4000, 2000, 2000, 0.008, 46, 1500.0, 5000.0, true, ' ', 1.0, true, true);
         result.add_consonant('g', 600, 2700, 200, 750, 0.008, 32, 1025.0, 5200.0, false, 'k', 0.25, true, false);
         result.add_consonant('g', 600, 2700, 200, 750, 0.005, 32, 1025.0, 5200.0, false, 'k', 0.8, true, true);
         result.add_consonant('h', 3000, 1000, 2000, 4000, 0.003, 11, 1000.0, 5000.0, false, ' ', 1.0, false, false);
@@ -196,20 +197,25 @@ impl Phonemes {
         result.add_consonant('k', 500, 1500, 900, 1100, 0.012, 35, 4200.0, 6000.0, false, 'k', 0.8, true, true);
         result.add_consonant('p', 1200, 500, 300, 1500, 0.009, 48, 700.0, 4300.0, false, 'p', 0.85, true, false);
         result.add_consonant('r', 100, 4000, 700, 900, 0.004, 43, 1170.0, 4000.0, false, '3', 0.2, true, false);
-        result.add_consonant('s', 3000, 3000, 4000, 2000, 0.017, 47, 5000.0, 900.0, true, ' ', 1.0, true, false);
+        result.add_consonant('s', 3000, 3000, 4000, 2000, 0.015, 47, 5000.0, 900.0, true, ' ', 1.0, true, false);
+        result.add_consonant('s', 3000, 3000, 4000, 2000, 0.012, 47, 5000.0, 900.0, true, ' ', 1.0, true, true);
         result.add_consonant('t', 300, 1500, 850, 1500, 0.012, 42, 2000.0, 6000.0, false, 't', 0.75, true, false);
         result.add_consonant('t', 300, 1500, 850, 1500, 0.009, 42, 2000.0, 6000.0, false, 't', 1.0, true, true);
         result.add_consonant('v', 700, 4000, 2000, 2000, 0.011, 46, 1400.0, 5000.0, true, ' ', 1.0, true, false);
         result.add_consonant('w', 0, 3500, 0, 0, 0.0, 48, 4150.0, 6500.0, false, 'O', 0.0, true, false);
         result.add_consonant('x', 3000, 1000, 2000, 4000, 0.005, 16, 1000.0, 3000.0, false, ' ', 1.0, false, false);
         result.add_consonant('z', 100, 3000, 4000, 2000, 0.017, 47, 5000.0, 700.0, true, ' ', 1.0, true, false);
-        result.add_consonant('D', 200, 3000, 4000, 2000, 0.017, 44, 4500.0, 5000.0, true, ' ', 1.0, true, false);
+        result.add_consonant('D', 200, 3000, 4000, 2000, 0.017, 44, 4500.0, 5000.0, true, 't', 0.2, false, false);
+        result.add_consonant('D', 200, 3000, 4000, 2000, 0.012, 44, 4500.0, 5000.0, true, 't', 0.2, false, true);
         result.add_consonant('S', 3000, 3000, 4000, 2000, 0.01, 47, 3000.0, 900.0, true, 'S', 0.2, true, false);
+        result.add_consonant('S', 3000, 3000, 4000, 2000, 0.005, 47, 3000.0, 900.0, true, 'S', 0.2, true, true);
         result.add_consonant('T', 1500, 3000, 4000, 2000, 0.017, 44, 4500.0, 5000.0, true, ' ', 1.0, true, false);
-        result.add_consonant('Z', 100, 3000, 4000, 2000, 0.017, 47, 3000.0, 700.0, true, ' ', 1.0, true, false);
+        result.add_consonant('T', 1500, 3000, 4000, 2000, 0.01, 44, 4500.0, 5000.0, true, ' ', 1.0, true, true);
+        result.add_consonant('Z', 100, 3000, 4000, 2000, 0.017, 47, 3000.0, 700.0, true, 'S', 0.2, false, false);
+        result.add_consonant('Z', 100, 3000, 4000, 2000, 0.008, 47, 3000.0, 700.0, true, 'S', 0.2, false, true);
         result.add_consonant('4', 100, 4000, 700, 900, 0.006, 43, 1170.0, 4000.0, false, '3', 0.2, false, false);
-        result.add_consonant('ʤ', 300, 800, 2100, 2300, 0.01, 45, 2000.0, 3000.0, true, 'S', 0.0, true, false);
-        result.add_consonant('ʧ', 3000, 800, 2100, 2300, 0.009, 45, 2000.0, 3000.0, true, 'S', 0.0, true, false);
+        result.add_consonant('ʤ', 300, 800, 2100, 2300, 0.01, 45, 2000.0, 3000.0, true, 'S', 0.1, false, false);
+        result.add_consonant('ʧ', 3000, 800, 2100, 2300, 0.009, 45, 2000.0, 3000.0, true, 'S', 0.1, false, false);
         result
     }
 
