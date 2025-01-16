@@ -152,7 +152,7 @@ impl Director {
             voice_pan: vec![],
             dark_shape: vec![],
             vowel_delay: 0,
-            vowel_transition_time: 3300,
+            vowel_transition_time: 2300,
             consonant_delay: 3000,
             consonant_transition_time: 0,
             consonant_on_time: 1000,
@@ -363,18 +363,20 @@ impl Director {
         // Play any final vowels.
 
         let mut final_vowel = None;
+        let mut shorten = 0;
         if let Some(note) = &self.current_note {
             final_vowel = Some(note.syllable.main_vowel);
             for c in &note.syllable.final_vowels.clone() {
                 let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, true);
                 delay = self.add_transient_vowel(delay, final_vowel, *c, vowel_delay, vowel_transition_time);
+                shorten = vowel_transition_time/2; // Start turning down the envelope before the end of the last vowel
                 final_vowel = Some(*c);
             }
         }
 
         // Smoothly stop the sound.
 
-        self.add_transition(delay, 3000, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: 0.0});
+        self.add_transition(delay-shorten, 2000, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: 0.0});
 
         // Play any final consonants.
 
@@ -389,8 +391,8 @@ impl Director {
                 let consonant = self.phonemes.get_consonant(*consonants.last().unwrap(), true).unwrap();
                 let consonant_shape = self.phonemes.get_consonant_shape(&consonant, vowel);
                 if consonant_shape.is_some() {
-                    self.add_shape_transition(delay, 1500, consonant_shape.unwrap().clone(), 0.0);
-                    delay += 1500;
+                    self.add_shape_transition(delay, 2000, consonant_shape.unwrap().clone(), 0.0);
+                    delay += 2000;
                 }
             }
             for c in &consonants {
@@ -488,7 +490,7 @@ impl Director {
         let mut end_shapes = vec![end_shape; self.voices.len()];
         for shape in &mut end_shapes {
             for x in shape {
-                *x *= 1.0 - self.randomize + 2.0*self.randomize*self.random.get_uniform();
+                *x *= 0.9 + 0.2*self.random.get_uniform();
             }
         }
         self.add_transition(delay, duration, TransitionData::ShapeChange {

@@ -90,6 +90,9 @@ impl Syllable {
                 if *c == 'A' || vowels[main] == 'm' || vowels[main] == 'n' || vowels[main] == 'N' {
                     main = i;
                 }
+                else if (vowels[main] == 'l' || vowels[main] == '3') && (*c != 'm' && *c != 'n' && *c != 'N') {
+                    main = i;
+                }
             }
         }
 
