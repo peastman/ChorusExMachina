@@ -152,7 +152,7 @@ impl Director {
             voice_pan: vec![],
             dark_shape: vec![],
             vowel_delay: 0,
-            vowel_transition_time: 2300,
+            vowel_transition_time: 3500,
             consonant_delay: 3000,
             consonant_transition_time: 0,
             consonant_on_time: 1000,
@@ -233,7 +233,7 @@ impl Director {
 
         if note_index < self.lowest_note || note_index > self.highest_note {
             if self.current_note.is_some() {
-                self.note_off();
+                self.note_off(false);
             }
             return Ok(());
         }
@@ -246,7 +246,7 @@ impl Director {
                 // Playing legato isn't possible, since there are consonants between the vowels.
                 // Finish the current note.
 
-                self.note_off();
+                self.note_off(true);
             }
         }
         let frequency = 440.0 * f32::powf(2.0, (note_index-69) as f32/12.0);
@@ -354,7 +354,7 @@ impl Director {
 
     /// End the current note.  Because this is a monophonic instrument, note_on() automatically
     /// ends the current note as well.
-    fn note_off(&mut self) {
+    fn note_off(&mut self, legato: bool) {
         let mut delay = 0;
         for transition in &self.transitions {
             delay = i64::max(delay, transition.end-self.step);
@@ -363,20 +363,19 @@ impl Director {
         // Play any final vowels.
 
         let mut final_vowel = None;
-        let mut shorten = 0;
         if let Some(note) = &self.current_note {
             final_vowel = Some(note.syllable.main_vowel);
             for c in &note.syllable.final_vowels.clone() {
                 let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, true);
                 delay = self.add_transient_vowel(delay, final_vowel, *c, vowel_delay, vowel_transition_time);
-                shorten = vowel_transition_time/2; // Start turning down the envelope before the end of the last vowel
                 final_vowel = Some(*c);
             }
         }
 
         // Smoothly stop the sound.
 
-        self.add_transition(delay-shorten, 2000, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: 0.0});
+        let off_time = if legato {1500} else {2000};
+        self.add_transition(delay, off_time, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: 0.0});
 
         // Play any final consonants.
 
@@ -591,7 +590,7 @@ impl Director {
                             let _ = self.note_on(&syllable, note_index, velocity);
                         }
                         Message::NoteOff => {
-                            self.note_off();
+                            self.note_off(false);
                         }
                         Message::SetVolume {volume} => {
                             self.volume = volume;
