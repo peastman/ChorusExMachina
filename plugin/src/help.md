@@ -34,7 +34,7 @@ The following vowels are supported.
 | Y | h**ü**bsch (German) | |
 | a | d**a**me (French) | |
 | e | beaut**é** (French) | |
-| i | b**e** | Often changed to `e` when singing |
+| i | b**e** | Sometimes changed to `y` when singing |
 | l | **l**ot | |
 | m | hi**m** | |
 | n | **n**ap | |

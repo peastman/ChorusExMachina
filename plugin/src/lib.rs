@@ -232,25 +232,25 @@ impl Plugin for ChorusExMachina {
                         let phrase = self.params.phrases.lock().unwrap()[self.params.selected_phrase.value() as usize].clone();
                         let replaced = phrase.replace(".", " ");
                         let syllables: Vec<&str> = replaced.split_whitespace().collect();
-                        if self.params.advance_syllable.value() {
-                            self.last_syllable_index = (self.last_syllable_index+1)%syllables.len() as i32;
-                        }
-                        let syllable_index: usize;
-                        if self.last_syllable_index < 0 || self.last_syllable_index >= syllables.len() as i32 {
-                            syllable_index = 0;
-                        }
-                        else {
-                            syllable_index = self.last_syllable_index as usize;
-                        }
                         if syllables.len() > 0 {
+                            if self.params.advance_syllable.value() {
+                                self.last_syllable_index = (self.last_syllable_index+1)%syllables.len() as i32;
+                            }
+                            let syllable_index: usize;
+                            if self.last_syllable_index < 0 || self.last_syllable_index >= syllables.len() as i32 {
+                                syllable_index = 0;
+                            }
+                            else {
+                                syllable_index = self.last_syllable_index as usize;
+                            }
                             let _ = sender.send(Message::NoteOn {syllable: syllables[syllable_index].to_string(), note_index: note as i32, velocity: velocity});
                             self.last_note = note;
+
+                            // If we get both a NoteOn and a NoteOff and the same time, skip the NoteOff
+                            // to allow legato playing.
+
+                            send_note_off = false;
                         }
-
-                        // If we get both a NoteOn and a NoteOff and the same time, skip the NoteOff
-                        // to allow legato playing.
-
-                        send_note_off = false;
                     },
                     NoteEvent::NoteOff { note, .. } => {
                         if note == self.last_note {
