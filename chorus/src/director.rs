@@ -754,10 +754,13 @@ impl Director {
             if is_final {
                 return (0, 1500);
             }
-            return (1000, 1500);
+            return (1000, 2500);
         }
         if vowel == 'N' {
             return (1000, 1500);
+        }
+        if is_final {
+            return (self.vowel_delay, 2500)
         }
         (self.vowel_delay, self.vowel_transition_time)
     }
