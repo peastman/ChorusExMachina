@@ -372,10 +372,11 @@ impl Director {
             }
         }
 
-        // Smoothly stop the sound.
+        // Determine how quickly to stop the sound.  It depends on whether the first final consonant
+        // is voiced.
 
-        let off_time = if legato {1500} else {2000};
-        self.add_transition(delay, off_time, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: 0.0});
+        let stop_envelope_time = delay;
+        let mut off_time = if legato {1500} else {2000};
 
         // Play any final consonants.
 
@@ -394,11 +395,19 @@ impl Director {
                     delay += 2000;
                 }
             }
+            let first_consonant = self.phonemes.get_consonant(consonants[0], true).unwrap();
+            if first_consonant.voiced {
+                off_time = off_time.max(first_consonant.delay+first_consonant.transition_time+first_consonant.on_time);
+            }
             for c in &consonants {
                 let (delay_to_consonant, _delay_to_vowel) = self.add_consonant(delay, *c, final_vowel, true);
                 delay += delay_to_consonant;
             }
         }
+
+        // Smoothly stop the sound.
+
+        self.add_transition(stop_envelope_time, off_time, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: 0.0});
         self.current_note = None;
     }
 
