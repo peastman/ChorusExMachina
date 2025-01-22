@@ -37,7 +37,6 @@ pub struct Glottis {
     frequency_drift: f32,
     volume_drift: f32,
     vibrato_phase: f32,
-    vibrato_frequency_drift: f32,
     vibrato_amplitude_drift: f32,
     random: Random,
     noise_filter: LowpassFilter,
@@ -52,13 +51,13 @@ pub struct Glottis {
 }
 
 impl Glottis {
-    pub fn new() -> Self {
+    pub fn new(index: usize) -> Self {
         let mut random = Random::new();
         Self {
             frequency: 220.0,
             rd: 1.7,
             noise: 0.01,
-            frequency_drift_amplitude: 0.003,
+            frequency_drift_amplitude: 0.005,
             volume_drift_amplitude: 0.1,
             vibrato_frequency: 5.0,
             vibrato_amplitude: 0.02,
@@ -67,8 +66,7 @@ impl Glottis {
             phase: random.get_uniform(),
             frequency_drift: random.get_normal(),
             volume_drift: random.get_normal(),
-            vibrato_phase: random.get_uniform(),
-            vibrato_frequency_drift: random.get_normal(),
+            vibrato_phase: 0.3*index as f32,
             vibrato_amplitude_drift: random.get_normal(),
             random: random,
             noise_filter: LowpassFilter::new(2000.0),
@@ -110,7 +108,6 @@ impl Glottis {
         if step % 1000 == 0 {
             self.frequency_drift = 0.99*self.frequency_drift + 0.1*self.random.get_normal();
             self.volume_drift = 0.99*self.volume_drift + 0.1*self.random.get_normal();
-            self.vibrato_frequency_drift = 0.99*self.vibrato_frequency_drift + 0.1*self.random.get_normal();
             self.vibrato_amplitude_drift = 0.99*self.vibrato_amplitude_drift + 0.1*self.random.get_normal();
         }
 
@@ -118,10 +115,10 @@ impl Glottis {
         // This depends on the primary frequency of the note, vibrato, and
         // random drift.
 
-        let vibrato_freq = self.vibrato_frequency * (1.0+self.vibrato_frequency_drift_amplitude*self.vibrato_frequency_drift);
+        let vibrato_freq = self.vibrato_frequency * (1.0+self.vibrato_frequency_drift_amplitude*(0.5*PI*self.vibrato_phase).cos());
         let vibrato_amplitude = self.vibrato_amplitude * (1.0+self.vibrato_amplitude_drift_amplitude*self.vibrato_amplitude_drift);
         let vibrato_offset = vibrato_freq / SAMPLE_RATE as f32;
-        self.vibrato_phase = (self.vibrato_phase+vibrato_offset) % 1.0;
+        self.vibrato_phase = (self.vibrato_phase+vibrato_offset) % 4.0;
         let freq = self.frequency * (1.0+self.frequency_drift_amplitude*self.frequency_drift) * (1.0+vibrato_amplitude*((2.0*PI*self.vibrato_phase).sin()));
         let offset = freq / SAMPLE_RATE as f32;
         self.phase = (self.phase+offset) % 1.0;
@@ -202,7 +199,7 @@ pub struct Voice {
 }
 
 impl Voice {
-    pub fn new(voice_part: VoicePart) -> Self {
+    pub fn new(voice_part: VoicePart, index: usize) -> Self {
         let vocal_length;
         let coupling_position;
         let vibrato_frequency;
@@ -234,7 +231,7 @@ impl Voice {
             }
         }
         let mut voice = Voice {
-            glottis: Glottis::new(),
+            glottis: Glottis::new(index),
             vocal: Waveguide::new(vocal_length),
             nasal: Waveguide::new(nasal_shape.len()),
             volume: 1.0,

@@ -171,14 +171,7 @@ impl Director {
         self.voice_part = voice_part.clone();
         self.voices.clear();
         for i in 0..voice_count {
-            let mut voice = Voice::new(voice_part);
-            if i%4 == 1 {
-                voice.set_vibrato_frequency(voice.get_vibrato_frequency()*1.05);
-            }
-            else if i%4 == 2 {
-                voice.set_vibrato_frequency(voice.get_vibrato_frequency()*0.95);
-            }
-            self.voices.push(voice);
+            self.voices.push(Voice::new(voice_part, i));
         }
         self.phonemes = Phonemes::new(voice_part);
         self.transitions.clear();
@@ -718,8 +711,14 @@ impl Director {
     /// Update the vibrato of all Voices.  This is called whenever the Director's vibrato is changed.
     fn update_vibrato(&mut self) {
         let amplitude = 0.04*(self.vibrato+0.1);
-        for voice in &mut self.voices {
-            voice.set_vibrato_amplitude(amplitude);
+        let n = self.voices.len();
+        for (i, voice) in &mut self.voices.iter_mut().enumerate() {
+            if n < 4 {
+                voice.set_vibrato_amplitude(amplitude*(1.0-0.25*i as f32));
+            }
+            else {
+                voice.set_vibrato_amplitude(amplitude*(1.0-0.5*(i as f32)/((n-1) as f32)));
+            }
         }
     }
 
@@ -733,8 +732,8 @@ impl Director {
         if let Some(note) = &self.current_note {
             let x = (self.highest_note-note.note_index) as f32 / (self.highest_note-self.lowest_note) as f32;
             let rd = 1.6 + 0.4*x - 0.2*self.volume - (self.intensity-0.5);
-            for voice in &mut self.voices {
-                voice.set_rd(rd);
+            for (i, voice) in &mut self.voices.iter_mut().enumerate() {
+                voice.set_rd(rd + 0.1*(i%4) as f32);
             }
         }
     }
