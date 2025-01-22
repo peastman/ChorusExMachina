@@ -172,11 +172,11 @@ impl Director {
         self.voices.clear();
         for i in 0..voice_count {
             let mut voice = Voice::new(voice_part);
-            if i%voice_count == 1 {
-                voice.set_vibrato_frequency(voice.get_vibrato_frequency()+0.2);
+            if i%4 == 1 {
+                voice.set_vibrato_frequency(voice.get_vibrato_frequency()*1.05);
             }
-            else if i%voice_count == 2 {
-                voice.set_vibrato_frequency(voice.get_vibrato_frequency()-0.2);
+            else if i%4 == 2 {
+                voice.set_vibrato_frequency(voice.get_vibrato_frequency()*0.95);
             }
             self.voices.push(voice);
         }
@@ -262,7 +262,7 @@ impl Director {
             prev_vowel = Some(note.syllable.main_vowel);
             for c in &note.syllable.final_vowels.clone() {
                 let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, true);
-                delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time);
+                delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time, true);
                 prev_vowel = Some(*c);
             }
 
@@ -301,7 +301,7 @@ impl Director {
 
         for c in &new_syllable.initial_vowels {
             let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, false);
-            delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time);
+            delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time, false);
             prev_vowel = Some(*c);
         }
 
@@ -367,7 +367,7 @@ impl Director {
             final_vowel = Some(note.syllable.main_vowel);
             for c in &note.syllable.final_vowels.clone() {
                 let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, true);
-                delay = self.add_transient_vowel(delay, final_vowel, *c, vowel_delay, vowel_transition_time);
+                delay = self.add_transient_vowel(delay, final_vowel, *c, vowel_delay, vowel_transition_time, true);
                 final_vowel = Some(*c);
             }
         }
@@ -413,7 +413,7 @@ impl Director {
 
     /// Add the Transitions to play a transient vowel (an initial or final vowel that sounds
     /// only briefly).
-    fn add_transient_vowel(&mut self, delay: i64, prev_vowel: Option<char>, c: char, vowel_delay: i64, vowel_transition_time: i64) -> i64 {
+    fn add_transient_vowel(&mut self, delay: i64, prev_vowel: Option<char>, c: char, vowel_delay: i64, vowel_transition_time: i64, is_final: bool) -> i64 {
         if prev_vowel.is_some() {
             self.add_vowel_transition(delay, prev_vowel.unwrap(), c, vowel_transition_time);
         }
@@ -422,7 +422,8 @@ impl Director {
             let nasal_coupling = self.phonemes.get_nasal_coupling(c);
             self.add_shape_transition(delay, vowel_transition_time, shape.clone(), nasal_coupling);
         }
-        let amplification = 0.7*self.phonemes.get_amplification(c);
+        let scale = if is_final {0.5} else {0.7};
+        let amplification = scale*self.phonemes.get_amplification(c);
         self.add_transition(delay, vowel_transition_time, TransitionData::EnvelopeChange {
             start_envelope: self.envelope_after_transitions,
             end_envelope: amplification
@@ -768,8 +769,11 @@ impl Director {
         if vowel == 'N' {
             return (1000, 1500);
         }
+        if vowel == '3' {
+            return (self.vowel_delay, 2000)
+        }
         if is_final {
-            return (self.vowel_delay, 2500)
+            return (self.vowel_delay, 2000)
         }
         (self.vowel_delay, self.vowel_transition_time)
     }

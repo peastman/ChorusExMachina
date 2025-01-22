@@ -192,7 +192,7 @@ impl Phonemes {
         result.add_consonant('g', 600, 2700, 200, 750, 0.008, 32, 1025.0, 5200.0, false, false, 'k', 0.25, true, false);
         result.add_consonant('g', 600, 2700, 200, 750, 0.005, 32, 1025.0, 5200.0, false, false, 'k', 0.8, true, true);
         result.add_consonant('h', 3000, 1000, 2000, 4000, 0.003, 11, 1000.0, 5000.0, false, false, ' ', 1.0, false, false);
-        result.add_consonant('j', 0, 3000, 0, 0, 0.0, 1, 4150.0, 6500.0, false, false, 'y', 0.25, false, false);
+        result.add_consonant('j', 0, 3000, 0, 0, 0.0, 1, 4150.0, 6500.0, false, false, 'i', 0.25, false, false);
         result.add_consonant('k', 500, 1500, 900, 1100, 0.015, 35, 4200.0, 6000.0, false, false, 'k', 0.8, true, false);
         result.add_consonant('k', 500, 1500, 900, 1100, 0.012, 35, 4200.0, 6000.0, false, false, 'k', 0.8, true, true);
         result.add_consonant('p', 1200, 500, 300, 1500, 0.009, 48, 700.0, 4300.0, false, false, 'p', 0.85, true, false);
