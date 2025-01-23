@@ -415,7 +415,7 @@ impl Director {
             let nasal_coupling = self.phonemes.get_nasal_coupling(c);
             self.add_shape_transition(delay, vowel_transition_time, shape.clone(), nasal_coupling);
         }
-        let scale = if is_final {0.5} else {0.7};
+        let scale = if is_final {0.3} else {0.7};
         let amplification = scale*self.phonemes.get_amplification(c);
         self.add_transition(delay, vowel_transition_time, TransitionData::EnvelopeChange {
             start_envelope: self.envelope_after_transitions,
@@ -769,10 +769,10 @@ impl Director {
             return (1000, 1500);
         }
         if vowel == '3' {
-            return (self.vowel_delay, 2000)
+            return (self.vowel_delay, 2500)
         }
         if is_final {
-            return (self.vowel_delay, 2000)
+            return (self.vowel_delay, 3200)
         }
         (self.vowel_delay, self.vowel_transition_time)
     }

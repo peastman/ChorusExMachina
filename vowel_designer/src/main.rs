@@ -35,6 +35,7 @@ struct Player {
     handles: [Pos2; 3],
     base_shape: Vec<f32>,
     shape: Vec<f32>,
+    nasal: bool,
     step: i64,
     current_note: u8,
     note_playing: bool
@@ -44,7 +45,7 @@ impl Player {
     fn new() -> Self {
         let voice_part = VoicePart::Bass;
         let mut result = Self {
-            voices: vec![Voice::new(voice_part)],
+            voices: vec![Voice::new(voice_part, 0)],
             voice_part: voice_part,
             voice_count: 1,
             shape_map: BTreeMap::new(),
@@ -52,6 +53,7 @@ impl Player {
             handles: [pos2(0.25, 0.0), pos2(0.5, 0.0), pos2(0.75, 0.0)],
             base_shape: vec![],
             shape: vec![],
+            nasal: false,
             step: 0,
             current_note: 0,
             note_playing: false
@@ -86,15 +88,16 @@ impl Player {
             }
         }
         for voice in &mut self.voices {
-            voice.set_vocal_shape(&shape, 0.0);
+            let nasal = if self.nasal {0.5} else {0.0};
+            voice.set_vocal_shape(&shape, nasal);
         }
         self.shape = shape;
     }
 
     fn rebuild(&mut self) {
         self.voices.clear();
-        for _i in 0..self.voice_count {
-            self.voices.push(Voice::new(self.voice_part));
+        for i in 0..self.voice_count {
+            self.voices.push(Voice::new(self.voice_part, i));
         }
         self.shape_map.clear();
         match self.voice_part {
@@ -370,7 +373,11 @@ impl App for MainGui {
                         ui.selectable_value(&mut player.voice_part, VoicePart::Bass, "Bass");
                     });
                 ui.add_space(10.0);
-                ui.add(egui::Slider::new(&mut player.voice_count, 1..=8).text("Voices"))
+                ui.add(egui::Slider::new(&mut player.voice_count, 1..=8).text("Voices"));
+                ui.add_space(10.0);
+                if ui.checkbox(&mut player.nasal, "Nasal").changed() {
+                    shape_changed = true;
+                }
             });
             egui::Grid::new("weights").show(ui, |ui| {
                 let mut index = 0;
