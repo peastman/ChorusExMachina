@@ -1,7 +1,7 @@
 # Entering Text
 
 A phrase consists of a series of syllables, separated by spaces, written in [X-SAMPA notation](https://en.wikipedia.org/wiki/X-SAMPA).
-For example, to sing the words "Happy birthday to you," enter the phrase `h{ pe b3T dEj tu ju`.  Each successive note is sung on
+For example, to sing the words "Happy birthday to you," enter the phrase `h{ pi b3T dEj tu ju`.  Each successive note is sung on
 the next syllable.  When it reaches the end of the current phrase, it loops back to the start again.
 
 You can enter up to 128 phrases.  To select the phrase to sing, click on it in the table.  To automate it in a DAW, set the parameter
@@ -94,11 +94,26 @@ Several different sounds can be used for the letter R, depending on the language
 Chorus Ex Machina is a monophonic instrument: each instance plays only one note at a time.  To
 create splits within a section use multiple tracks, each with its own instance of the plugin.  If you
 press a new note before releasing the previous one, it is played legato, smoothly blending between
-them.  Legato transitions are only possible between vowels, however.  If there are any consonants
+them.  Smooth transitions are only possible between vowels, however.  If there are any consonants
 in between, they necessarily create a break in the sound.
 
 You can optionally add an accent to the beginning of each separated (non-legato) note.  When this
 option is enabled, the strength of the accent is determined by the key velocity.
+
+The Vowel Delay parameter is an important tool for creating accurate timing, especially in fast
+passages.  When a syllable begins with one or more consonants, the consonants are normally sung
+before the beat, and the vowel begins right on the beat.  This requires the start of the note to
+be shifted earlier.  How far it must be shifted depends on the number and type of consonants,
+possibly including final consonants from the previous note.  Adjusting note start times by hand is
+slow and imprecise.
+
+Instead you can tell it to delay the start of the first vowel by up to 200 ms.  This allows the
+vowel to always follow the start of the note by exactly the same amount, regardless of what
+consonants precede it.  When singing legato, the end of the previous note is shifted by the same
+amount to avoid creating a break in the sound.  This gives precise timing with no extra effort.
+If you need to synchronize the chorus with other instruments, you can adjust the MIDI offset in
+your DAW to shift the start of the notes earlier by the same amount as the delay, so vowels begin
+exactly on the beat.
 
 There are several parameters you can automate in a DAW to control the performance.
 
@@ -113,5 +128,7 @@ There are several parameters you can automate in a DAW to control the performanc
   fine control over individual consonants.
 - **Attack Rate**.  How quickly notes reach full volume.
 - **Stereo Width**.  How widely the singers are spread out in space.
+- **Vowel Delay**.  The delay in milliseconds from the start of each note to the beginning of the
+  first vowel.
 - **Accent**.  Whether to add an accent to each note based on its velocity.
 - **Advance Syllable**.  Whether to advance to the next syllable in the phrase for the next note.

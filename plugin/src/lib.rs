@@ -38,6 +38,7 @@ pub struct ChorusExMachina {
     last_consonant_volume: f32,
     last_attack_rate: f32,
     last_stereo_width: f32,
+    last_vowel_delay: i32,
     last_accent: bool,
     last_phrase: i32,
     last_syllable_index: i32
@@ -67,6 +68,8 @@ struct ChorusExMachinaParams {
     pub attack_rate: FloatParam,
     #[id = "stereo_width"]
     pub stereo_width: FloatParam,
+    #[id = "vowel_delay"]
+    pub vowel_delay: IntParam,
     #[id = "accent"]
     pub accent: BoolParam,
     #[id = "selected_phrase"]
@@ -106,6 +109,7 @@ impl Default for ChorusExMachina {
             last_consonant_volume: -1.0,
             last_attack_rate: -1.0,
             last_stereo_width: -1.0,
+            last_vowel_delay: -1,
             last_accent: false,
             last_phrase: -1,
             last_syllable_index: -1
@@ -127,6 +131,7 @@ impl Default for ChorusExMachinaParams {
             consonant_volume: FloatParam::new("Consonant Volume", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
             attack_rate: FloatParam::new("Attack Rate", 0.8, FloatRange::Linear {min: 0.0, max: 1.0}),
             stereo_width: FloatParam::new("Stereo Width", 0.3, FloatRange::Linear {min: 0.0, max: 1.0}),
+            vowel_delay: IntParam::new("Vowel Delay", 0, IntRange::Linear {min: 0, max: 200}),
             accent: BoolParam::new("Accent", false),
             selected_phrase: IntParam::new("Selected Phrase", 0, IntRange::Linear {min: 0, max: 127}),
             advance_syllable: BoolParam::new("Advance Syllable", true),
@@ -212,6 +217,10 @@ impl Plugin for ChorusExMachina {
         if self.last_stereo_width != self.params.stereo_width.value() {
             self.last_stereo_width = self.params.stereo_width.value();
             let _ = sender.send(Message::SetStereoWidth {width: self.last_stereo_width});
+        }
+        if self.last_vowel_delay != self.params.vowel_delay.value() {
+            self.last_vowel_delay = self.params.vowel_delay.value();
+            let _ = sender.send(Message::SetMinVowelStartTime {samples: (self.last_vowel_delay*chorus::SAMPLE_RATE/1000) as i64});
         }
         if self.last_accent != self.params.accent.value() {
             self.last_accent = self.params.accent.value();

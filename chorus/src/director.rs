@@ -37,6 +37,7 @@ pub enum Message {
     SetAttackRate {attack: f32},
     SetAccent {accent: bool},
     SetStereoWidth {width: f32},
+    SetMinVowelStartTime {samples: i64},
     SetDelays {vowel_delay: i64, vowel_transition_time: i64, consonant_delay: i64, consonant_transition_time: i64},
     SetConsonants {on_time: i64, off_time: i64, volume: f32, position: usize, frequency: f32, bandwidth: f32},
     SetRandomize {randomize: f32}
@@ -96,6 +97,7 @@ pub struct Director {
     consonant_volume: f32,
     attack_rate: f32,
     accent: bool,
+    min_vowel_start: i64,
     off_after_step: i64,
     shape_after_transitions: Vec<Vec<f32>>,
     nasal_coupling_after_transitions: f32,
@@ -142,6 +144,7 @@ impl Director {
             consonant_volume: 0.5,
             attack_rate: 0.8,
             accent: false,
+            min_vowel_start: 0,
             off_after_step: 0,
             shape_after_transitions: vec![],
             nasal_coupling_after_transitions: 0.0,
@@ -233,6 +236,8 @@ impl Director {
 
         // Prepare for playing the note.
 
+        let num_transitions = self.transitions.len();
+        let num_consonants = self.consonants.len();
         let new_syllable = Syllable::build(syllable)?;
         if let Some(note) = &self.current_note {
             if note.syllable.final_consonants.len() > 0 || new_syllable.initial_consonants.len() > 0 {
@@ -288,6 +293,21 @@ impl Director {
             // Set the frequency of the new note.
 
             self.add_transition(delay, 0, TransitionData::FrequencyChange {start_frequency: frequency, end_frequency: frequency});
+        }
+
+        // Update the start times of any transitions or consonants that were just added to make the vowel
+        // start at the right time.
+
+        if delay < self.min_vowel_start {
+            let offset = self.min_vowel_start-delay;
+            for i in num_transitions..self.transitions.len() {
+                self.transitions[i].start += offset;
+                self.transitions[i].end += offset;
+            }
+            for i in num_consonants..self.consonants.len() {
+                self.consonants[i].start += offset;
+            }
+            delay = self.min_vowel_start;
         }
 
         // Play any initial vowels.
@@ -627,6 +647,9 @@ impl Director {
                         Message::SetStereoWidth {width} => {
                             self.stereo_width = width;
                             self.update_pan_positions();
+                        }
+                        Message::SetMinVowelStartTime {samples} => {
+                            self.min_vowel_start = samples;
                         }
                         Message::SetDelays {vowel_delay, vowel_transition_time, consonant_delay, consonant_transition_time} => {
                             // This message is only used for develoment.

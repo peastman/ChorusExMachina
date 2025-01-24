@@ -116,6 +116,14 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
         draw_param_slider(ui, &params.consonant_volume, setter);
         draw_param_slider(ui, &params.attack_rate, setter);
         draw_param_slider(ui, &params.stereo_width, setter);
+        ui.label("Vowel Delay (ms)");
+        let mut delay = params.vowel_delay.value();
+        if ui.add(egui::Slider::new(&mut delay, 0..=200)).changed() {
+            setter.begin_set_parameter(&params.vowel_delay);
+            setter.set_parameter(&params.vowel_delay, delay);
+            setter.end_set_parameter(&params.vowel_delay);
+        }
+        ui.end_row();
         let mut accent = params.accent.value();
         if ui.checkbox(&mut accent, "Accent").changed() {
             setter.begin_set_parameter(&params.accent);
