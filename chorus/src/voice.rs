@@ -15,7 +15,7 @@
 
 use std::f32::consts::PI;
 use crate::random::Random;
-use crate::filter::{Filter, LowpassFilter};
+use crate::filter::{Filter, LowpassFilter, BandpassFilter};
 use crate::VoicePart;
 use crate::SAMPLE_RATE;
 
@@ -40,6 +40,7 @@ pub struct Glottis {
     vibrato_amplitude_drift: f32,
     random: Random,
     noise_filter: LowpassFilter,
+    pub formant: BandpassFilter,
     last_rd: f32,
     alpha: f32,
     epsilon: f32,
@@ -51,7 +52,7 @@ pub struct Glottis {
 }
 
 impl Glottis {
-    pub fn new(index: usize) -> Self {
+    pub fn new(index: usize, formant_frequency: f32) -> Self {
         let mut random = Random::new();
         Self {
             frequency: 220.0,
@@ -70,6 +71,7 @@ impl Glottis {
             vibrato_amplitude_drift: random.get_normal(),
             random: random,
             noise_filter: LowpassFilter::new(2000.0),
+            formant: BandpassFilter::new(0.5*formant_frequency, 2.0*formant_frequency),
             last_rd: 0.0,
             alpha: 0.0,
             epsilon: 0.0,
@@ -133,10 +135,15 @@ impl Glottis {
         // Compute the output.
 
         let volume = 1.0 + self.volume_drift_amplitude*self.volume_drift;
+        let mut excitation;
         if t < self.te {
-            return volume*(noise + self.e0*(self.alpha*t).exp()*(PI*t/self.tp).sin());
+            excitation = noise + self.e0*(self.alpha*t).exp()*(PI*t/self.tp).sin();
         }
-        volume*(noise + ((-self.epsilon*(t-self.te)).exp() - self.shift)/(self.epsilon*self.ta))
+        else {
+            excitation = noise + ((-self.epsilon*(t-self.te)).exp() - self.shift)/(self.epsilon*self.ta)
+        }
+        excitation += 1.2*self.formant.process(excitation);
+        volume*excitation
     }
 }
 
@@ -203,35 +210,40 @@ impl Voice {
         let vocal_length;
         let coupling_position;
         let vibrato_frequency;
+        let formant_frequency;
         let nasal_shape;
         match voice_part {
             VoicePart::Soprano => {
                 vocal_length = 42;
                 coupling_position = 22;
                 vibrato_frequency = 6.0;
+                formant_frequency = 3200.0;
                 nasal_shape = vec![1.52, 1.71, 2.08, 2.78, 3.53, 4.28, 4.33, 2.89, 2.49, 2.42, 2.13, 1.95, 1.83, 1.74, 1.41, 0.878, 0.769, 1.15, 1.12, 1.09, 1.06, 0.672];
             }
             VoicePart::Alto => {
                 vocal_length = 45;
                 coupling_position = 23;
                 vibrato_frequency = 5.3;
+                formant_frequency = 3000.0;
                 nasal_shape = vec![1.52, 1.7, 2.04, 2.68, 3.38, 4.18, 4.4, 3.4, 2.45, 2.46, 2.28, 2.0, 1.88, 1.8, 1.65, 1.24, 0.735, 0.873, 1.17, 1.09, 1.1, 1.03, 0.667];
             }
             VoicePart::Tenor => {
                 vocal_length = 48;
                 coupling_position = 24;
                 vibrato_frequency = 5.3;
+                formant_frequency = 2800.0;
                 nasal_shape = vec![1.52, 1.7, 2.04, 2.68, 3.38, 4.18, 4.4, 3.4, 2.45, 2.46, 2.28, 2.0, 1.88, 1.8, 1.65, 1.24, 0.735, 0.873, 1.17, 1.09, 1.1, 1.03, 0.667];
             }
             VoicePart::Bass => {
                 vocal_length = 50;
                 coupling_position = 25;
                 vibrato_frequency = 5.2;
+                formant_frequency = 2600.0;
                 nasal_shape = vec![1.52, 1.69, 1.99, 2.59, 3.3, 4.02, 4.44, 3.77, 2.57, 2.49, 2.38, 2.09, 1.94, 1.83, 1.76, 1.52, 1.05, 0.699, 0.972, 1.18, 1.07, 1.12, 1.01, 0.663];
             }
         }
         let mut voice = Voice {
-            glottis: Glottis::new(index),
+            glottis: Glottis::new(index, formant_frequency),
             vocal: Waveguide::new(vocal_length),
             nasal: Waveguide::new(nasal_shape.len()),
             volume: 1.0,
