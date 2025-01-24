@@ -35,7 +35,7 @@ The following vowels are supported.
 | a | d**a**me (French) | |
 | e | beaut**é** (French) | |
 | i | b**e** | Sometimes changed to `y` when singing |
-| l | **l**ot | |
+| l | **l**ot | A consonant when at the start of a syllable |
 | m | hi**m** | |
 | n | **n**ap | |
 | o | v**eau** (French) | |
@@ -52,6 +52,7 @@ The following consonants are supported.
 
 | Symbol | Pronunciation | Notes |
 | --- | --- | --- |
+| C | i**ch** (German) | |
 | D | **th**is | |
 | S | **sh**ip | |
 | T | **th**in | |
