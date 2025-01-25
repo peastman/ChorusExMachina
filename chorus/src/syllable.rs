@@ -14,7 +14,7 @@
 // If not, see <https://www.gnu.org/licenses/>.
 
 const VOWELS: &str = "aeilmnouyAEINOUVY239&{@";
-const CONSONANTS: &str = "bdfghjklprstvwxzCDSTZ4ʤʧ";
+const CONSONANTS: &str = "bdfghjkprstvwxzCDSTZ4ʤʧ";
 
 /// A Syllable consists of:
 ///
@@ -48,10 +48,6 @@ impl Syllable {
             if CONSONANTS.contains(c) {
                 if stage == 0 {
                     initial_consonants.push(c);
-                }
-                else if stage == 1 && c == 'l' {
-                    // l is treated as a constant at the start of a syllable, but a vowel at the end.
-                    vowels.push(c);
                 }
                 else {
                     final_consonants.push(c);

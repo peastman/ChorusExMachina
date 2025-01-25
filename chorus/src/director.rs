@@ -295,27 +295,38 @@ impl Director {
             self.add_transition(delay, 0, TransitionData::FrequencyChange {start_frequency: frequency, end_frequency: frequency});
         }
 
-        // Update the start times of any transitions or consonants that were just added to make the vowel
-        // start at the right time.
+        // Define a function that updates the start times of any transitions or consonants that were just added,
+        // so as to make the vowel start at the right time.  This might be called either before or after the first
+        // initial vowel, depending on what it is.
 
-        if delay < self.min_vowel_start {
-            let offset = self.min_vowel_start-delay;
-            for i in num_transitions..self.transitions.len() {
-                self.transitions[i].start += offset;
-                self.transitions[i].end += offset;
+        let update_starts = |director: &mut Director, delay: &mut i64, has_updated_starts: &mut bool| {
+            if *delay < director.min_vowel_start {
+                let offset = director.min_vowel_start-*delay;
+                for i in num_transitions..director.transitions.len() {
+                    director.transitions[i].start += offset;
+                    director.transitions[i].end += offset;
+                }
+                for i in num_consonants..director.consonants.len() {
+                    director.consonants[i].start += offset;
+                }
+                *delay = director.min_vowel_start;
             }
-            for i in num_consonants..self.consonants.len() {
-                self.consonants[i].start += offset;
-            }
-            delay = self.min_vowel_start;
-        }
+            *has_updated_starts = true;
+        };
 
         // Play any initial vowels.
 
+        let mut has_updated_starts = false;
         for c in &new_syllable.initial_vowels {
+            if !has_updated_starts && *c != 'l' && *c != 'm' && *c != 'n' {
+                update_starts(self, &mut delay, &mut has_updated_starts);
+            }
             let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, false);
             delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time, false);
             prev_vowel = Some(*c);
+        }
+        if !has_updated_starts {
+            update_starts(self, &mut delay, &mut has_updated_starts);
         }
 
         // Start the main vowel playing.
