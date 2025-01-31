@@ -214,7 +214,7 @@ impl Director {
             }
         }
         self.shape_after_transitions = vec![vec![0.0; vocal_length]; voice_count];
-        self.dark_shape = self.phonemes.get_vowel_shape('9').unwrap().clone();
+        self.dark_shape = self.phonemes.get_vowel_shape('o').unwrap().clone();
         self.update_pan_positions();
         self.update_vibrato();
         self.update_volume();
