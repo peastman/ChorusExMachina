@@ -37,6 +37,7 @@ pub struct ChorusExMachina {
     last_brightness: f32,
     last_consonant_volume: f32,
     last_attack_rate: f32,
+    last_release_rate: f32,
     last_stereo_width: f32,
     last_vowel_delay: i32,
     last_accent: bool,
@@ -66,6 +67,8 @@ struct ChorusExMachinaParams {
     pub consonant_volume: FloatParam,
     #[id = "attack_rate"]
     pub attack_rate: FloatParam,
+    #[id = "release_rate"]
+    pub release_rate: FloatParam,
     #[id = "stereo_width"]
     pub stereo_width: FloatParam,
     #[id = "vowel_delay"]
@@ -108,6 +111,7 @@ impl Default for ChorusExMachina {
             last_brightness: -1.0,
             last_consonant_volume: -1.0,
             last_attack_rate: -1.0,
+            last_release_rate: -1.0,
             last_stereo_width: -1.0,
             last_vowel_delay: -1,
             last_accent: false,
@@ -130,6 +134,7 @@ impl Default for ChorusExMachinaParams {
             brightness: FloatParam::new("Brightness", 1.0, FloatRange::Linear {min: 0.0, max: 1.0}),
             consonant_volume: FloatParam::new("Consonant Volume", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
             attack_rate: FloatParam::new("Attack Rate", 0.8, FloatRange::Linear {min: 0.0, max: 1.0}),
+            release_rate: FloatParam::new("Release Rate", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
             stereo_width: FloatParam::new("Stereo Width", 0.3, FloatRange::Linear {min: 0.0, max: 1.0}),
             vowel_delay: IntParam::new("Vowel Delay", 0, IntRange::Linear {min: 0, max: 200}),
             accent: BoolParam::new("Accent", false),
@@ -213,6 +218,10 @@ impl Plugin for ChorusExMachina {
         if self.last_attack_rate != self.params.attack_rate.value() {
             self.last_attack_rate = self.params.attack_rate.value();
             let _ = sender.send(Message::SetAttackRate {attack: self.last_attack_rate});
+        }
+        if self.last_release_rate != self.params.release_rate.value() {
+            self.last_release_rate = self.params.release_rate.value();
+            let _ = sender.send(Message::SetReleaseRate {release: self.last_release_rate});
         }
         if self.last_stereo_width != self.params.stereo_width.value() {
             self.last_stereo_width = self.params.stereo_width.value();

@@ -35,6 +35,7 @@ pub enum Message {
     SetBrightness {brightness: f32},
     SetConsonantVolume {volume: f32},
     SetAttackRate {attack: f32},
+    SetReleaseRate {release: f32},
     SetAccent {accent: bool},
     SetStereoWidth {width: f32},
     SetMinVowelStartTime {samples: i64},
@@ -97,6 +98,7 @@ pub struct Director {
     brightness: f32,
     consonant_volume: f32,
     attack_rate: f32,
+    release_rate: f32,
     accent: bool,
     min_vowel_start: i64,
     off_after_step: i64,
@@ -146,6 +148,7 @@ impl Director {
             brightness: 1.0,
             consonant_volume: 0.5,
             attack_rate: 0.8,
+            release_rate: 0.5,
             accent: false,
             min_vowel_start: 0,
             off_after_step: 0,
@@ -414,11 +417,11 @@ impl Director {
             }
         }
 
-        // Determine how quickly to stop the sound.  It depends on whether the first final consonant
+        // Determine how quickly to stop the sound.  This may get modified if the first final consonant
         // is voiced.
 
         let stop_envelope_time = delay;
-        let mut off_time = if legato {1500} else {2000};
+        let mut off_time = if legato {1500} else {1000 + (6000.0*(1.0-self.release_rate)) as i64};
 
         // Play any final consonants.
 
@@ -675,6 +678,9 @@ impl Director {
                         }
                         Message::SetAttackRate {attack} => {
                             self.attack_rate = attack;
+                        }
+                        Message::SetReleaseRate {release} => {
+                            self.release_rate = release;
                         }
                         Message::SetAccent {accent} => {
                             self.accent = accent;

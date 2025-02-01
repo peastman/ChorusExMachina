@@ -115,6 +115,7 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
         draw_param_slider(ui, &params.brightness, setter);
         draw_param_slider(ui, &params.consonant_volume, setter);
         draw_param_slider(ui, &params.attack_rate, setter);
+        draw_param_slider(ui, &params.release_rate, setter);
         draw_param_slider(ui, &params.stereo_width, setter);
         ui.label("Vowel Delay (ms)");
         let mut delay = params.vowel_delay.value();
@@ -177,7 +178,9 @@ fn draw_text_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, sette
             });
             row.col(|ui| {
                 if row_index == state.edit_phrase {
-                    clicked = ui.add_sized(ui.available_size(), egui::TextEdit::singleline(&mut phrases[row_index])).clicked();
+                    let response = ui.add_sized(ui.available_size(), egui::TextEdit::singleline(&mut phrases[row_index]));
+                    response.request_focus();
+                    clicked = response.clicked();
                 }
                 else {
                     clicked = ui.label(&phrases[row_index]).clicked();

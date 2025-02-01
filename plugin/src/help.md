@@ -128,6 +128,7 @@ There are several parameters you can automate in a DAW to control the performanc
 - **Consonant Volume**.  How loud consonants are relative to vowels.  This can be automated for
   fine control over individual consonants.
 - **Attack Rate**.  How quickly notes reach full volume.
+- **Release Rate**.  How quickly the sound stops at the end of a note.
 - **Stereo Width**.  How widely the singers are spread out in space.
 - **Vowel Delay**.  The delay in milliseconds from the start of each note to the beginning of the
   first vowel.
