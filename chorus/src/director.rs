@@ -264,6 +264,10 @@ impl Director {
         for transition in &self.transitions {
             delay = i64::max(delay, transition.end-self.step);
         }
+        let max_consonant_delay = self.consonant_delays.iter().max().unwrap();
+        for consonant in &self.consonants {
+            delay = i64::max(delay, consonant.start+consonant.on_time+consonant.off_time+max_consonant_delay-self.step);
+        }
         let mut prev_vowel = None;
         if let Some(note) = &self.current_note {
             // Play any final vowels from the previous note.
@@ -809,13 +813,13 @@ impl Director {
     fn get_vowel_timing(&self, vowel: char, is_final: bool) -> (i64, i64) {
         if vowel == 'm' {
             if is_final {
-                return (0, 1500);
+                return (500, 1500);
             }
             return (1000, 1500);
         }
         if vowel == 'n' {
             if is_final {
-                return (0, 1500);
+                return (500, 1500);
             }
             return (1000, 2500);
         }
@@ -823,6 +827,9 @@ impl Director {
             return (1000, 1500);
         }
         if vowel == '3' {
+            if is_final {
+                return (self.vowel_delay, 1500)
+            }
             return (self.vowel_delay, 2500)
         }
         if is_final {
