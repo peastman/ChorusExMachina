@@ -80,6 +80,7 @@ pub struct Director {
     voice_part: VoicePart,
     lowest_note: i32,
     highest_note: i32,
+    high_blend_note: i32,
     phonemes: Phonemes,
     random: Random,
     step: i64,
@@ -107,6 +108,7 @@ pub struct Director {
     stereo_width: f32,
     voice_pan: Vec<f32>,
     dark_shape: Vec<f32>,
+    high_shape: Vec<f32>,
     vowel_delay: i64,
     vowel_transition_time: i64,
     consonant_delay: i64,
@@ -127,6 +129,7 @@ impl Director {
             voice_part: voice_part.clone(),
             lowest_note: 0,
             highest_note: 0,
+            high_blend_note: 0,
             phonemes: Phonemes::new(voice_part),
             random: Random::new(),
             step: 0,
@@ -154,6 +157,7 @@ impl Director {
             stereo_width: 0.3,
             voice_pan: vec![],
             dark_shape: vec![],
+            high_shape: vec![],
             vowel_delay: 0,
             vowel_transition_time: 3500,
             consonant_delay: 3000,
@@ -196,25 +200,33 @@ impl Director {
                 vocal_length = 42;
                 self.lowest_note = 57;
                 self.highest_note = 88;
+                self.high_blend_note = 72;
             }
             VoicePart::Alto => {
                 vocal_length = 45;
                 self.lowest_note = 48;
                 self.highest_note = 79;
+                self.high_blend_note = 72;
             }
             VoicePart::Tenor => {
                 vocal_length = 48;
                 self.lowest_note = 43;
                 self.highest_note = 72;
+                self.high_blend_note = 64;
             }
             VoicePart::Bass => {
                 vocal_length = 50;
                 self.lowest_note = 36;
                 self.highest_note = 67;
+                self.high_blend_note = 60;
             }
         }
         self.shape_after_transitions = vec![vec![0.0; vocal_length]; voice_count];
         self.dark_shape = self.phonemes.get_vowel_shape('o').unwrap().clone();
+        self.high_shape = self.phonemes.get_vowel_shape('A').unwrap().clone();
+        for i in 0..self.high_shape.len() {
+            self.high_shape[i] = 0.7*self.high_shape[i] + 0.3*self.dark_shape[i];
+        }
         self.update_pan_positions();
         self.update_vibrato();
         self.update_volume();
@@ -260,7 +272,7 @@ impl Director {
             prev_vowel = Some(note.syllable.main_vowel);
             for c in &note.syllable.final_vowels.clone() {
                 let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, true);
-                delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time, true);
+                delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time, true, current_note_index);
                 prev_vowel = Some(*c);
             }
 
@@ -281,7 +293,7 @@ impl Director {
                 None => new_syllable.main_vowel
             };
             for i in 0..new_syllable.initial_consonants.len() {
-                let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, new_syllable.initial_consonants[i], Some(adjacent_vowel), false);
+                let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, new_syllable.initial_consonants[i], Some(adjacent_vowel), false, note_index);
                 if i == new_syllable.initial_consonants.len()-1 {
                     delay += delay_to_vowel;
                 }
@@ -322,7 +334,7 @@ impl Director {
                 update_starts(self, &mut delay, &mut has_updated_starts);
             }
             let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, false);
-            delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time, false);
+            delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time, false, note_index);
             prev_vowel = Some(*c);
         }
         if !has_updated_starts {
@@ -335,18 +347,18 @@ impl Director {
         let nasal_coupling = self.phonemes.get_nasal_coupling(new_syllable.main_vowel);
         let transition_time = if self.current_note.is_some() || new_syllable.initial_vowels.len() > 0 || new_syllable.initial_consonants.len() > 0 {self.vowel_transition_time} else {0};
         if prev_vowel.is_some() {
-            self.add_vowel_transition(delay, prev_vowel.unwrap(), new_syllable.main_vowel, self.vowel_transition_time);
+            self.add_vowel_transition(delay, prev_vowel.unwrap(), new_syllable.main_vowel, self.vowel_transition_time, note_index);
         }
         else {
             if let Some(c) = self.consonants.last() {
                 if new_syllable.initial_vowels.len() == 0 {
                     let consonant_shape = self.phonemes.get_consonant_shape(c, new_syllable.main_vowel);
                     if consonant_shape.is_some() {
-                        self.add_shape_transition(delay, 0, consonant_shape.unwrap().clone(), self.nasal_coupling_after_transitions);
+                        self.add_shape_transition(delay, 0, consonant_shape.unwrap().clone(), self.nasal_coupling_after_transitions, note_index);
                     }
                 }
             };
-            self.add_shape_transition(delay, transition_time, shape, nasal_coupling)
+            self.add_shape_transition(delay, transition_time, shape, nasal_coupling, note_index)
         }
 
         // Adjust the envelope for the new note.  If accent is enabled, overshoot it then come back down.
@@ -387,11 +399,13 @@ impl Director {
         // Play any final vowels.
 
         let mut final_vowel = None;
+        let mut note_index = -1;
         if let Some(note) = &self.current_note {
+            note_index = note.note_index;
             final_vowel = Some(note.syllable.main_vowel);
             for c in &note.syllable.final_vowels.clone() {
                 let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, true);
-                delay = self.add_transient_vowel(delay, final_vowel, *c, vowel_delay, vowel_transition_time, true);
+                delay = self.add_transient_vowel(delay, final_vowel, *c, vowel_delay, vowel_transition_time, true, note_index);
                 final_vowel = Some(*c);
             }
         }
@@ -415,7 +429,7 @@ impl Director {
                 let consonant = self.phonemes.get_consonant(*consonants.last().unwrap(), true).unwrap();
                 let consonant_shape = self.phonemes.get_consonant_shape(&consonant, vowel);
                 if consonant_shape.is_some() {
-                    self.add_shape_transition(delay, 2000, consonant_shape.unwrap().clone(), 0.0);
+                    self.add_shape_transition(delay, 2000, consonant_shape.unwrap().clone(), 0.0, note_index);
                     delay += 2000;
                 }
             }
@@ -424,7 +438,7 @@ impl Director {
                 off_time = off_time.max(first_consonant.delay+first_consonant.transition_time+first_consonant.on_time);
             }
             for c in &consonants {
-                let (delay_to_consonant, _delay_to_vowel) = self.add_consonant(delay, *c, final_vowel, true);
+                let (delay_to_consonant, _delay_to_vowel) = self.add_consonant(delay, *c, final_vowel, true, note_index);
                 delay += delay_to_consonant;
             }
         }
@@ -437,14 +451,14 @@ impl Director {
 
     /// Add the Transitions to play a transient vowel (an initial or final vowel that sounds
     /// only briefly).
-    fn add_transient_vowel(&mut self, delay: i64, prev_vowel: Option<char>, c: char, vowel_delay: i64, vowel_transition_time: i64, is_final: bool) -> i64 {
+    fn add_transient_vowel(&mut self, delay: i64, prev_vowel: Option<char>, c: char, vowel_delay: i64, vowel_transition_time: i64, is_final: bool, note_index: i32) -> i64 {
         if prev_vowel.is_some() {
-            self.add_vowel_transition(delay, prev_vowel.unwrap(), c, vowel_transition_time);
+            self.add_vowel_transition(delay, prev_vowel.unwrap(), c, vowel_transition_time, note_index);
         }
         else {
             let shape = self.phonemes.get_vowel_shape(c).unwrap();
             let nasal_coupling = self.phonemes.get_nasal_coupling(c);
-            self.add_shape_transition(delay, vowel_transition_time, shape.clone(), nasal_coupling);
+            self.add_shape_transition(delay, vowel_transition_time, shape.clone(), nasal_coupling, note_index);
         }
         let scale = if is_final {0.3} else {0.7};
         let amplification = scale*self.phonemes.get_amplification(c);
@@ -456,22 +470,22 @@ impl Director {
     }
 
     /// Add the Transitions to smoothly change the vocal tract shape between two vowels.
-    fn add_vowel_transition(&mut self, delay: i64, vowel1: char, vowel2: char, vowel_transition_time: i64) {
+    fn add_vowel_transition(&mut self, delay: i64, vowel1: char, vowel2: char, vowel_transition_time: i64, note_index: i32) {
         let shape = self.phonemes.get_vowel_shape(vowel2).unwrap().clone();
         let nasal_coupling = self.phonemes.get_nasal_coupling(vowel2);
         if let Some(intermediate_shape) = self.phonemes.get_intermediate_shape(vowel1, vowel2) {
             let intermediate_coupling = 0.5*(self.nasal_coupling_after_transitions+nasal_coupling);
-            self.add_shape_transition(delay, vowel_transition_time/2, intermediate_shape.clone(), intermediate_coupling);
-            self.add_shape_transition(delay+vowel_transition_time/2, vowel_transition_time/2, shape, nasal_coupling);
+            self.add_shape_transition(delay, vowel_transition_time/2, intermediate_shape.clone(), intermediate_coupling, note_index);
+            self.add_shape_transition(delay+vowel_transition_time/2, vowel_transition_time/2, shape, nasal_coupling, note_index);
         }
         else {
-            self.add_shape_transition(delay, vowel_transition_time, shape, nasal_coupling);
+            self.add_shape_transition(delay, vowel_transition_time, shape, nasal_coupling, note_index);
         }
     }
 
     /// Play a consonant.  This adds a Consonant to the queue, and if necessary also adds a
     /// Transition to control the vocal tract shape appropriately.
-    fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool) -> (i64, i64) {
+    fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool, note_index: i32) -> (i64, i64) {
         let mut consonant = self.phonemes.get_consonant(c, is_final).unwrap();
         consonant.start = self.step+delay;
         consonant.volume *= 2.0*self.consonant_volume;
@@ -488,8 +502,8 @@ impl Director {
             let start_shape = self.phonemes.get_consonant_shape(&consonant, vowel).unwrap().clone();
             let end_shape = (if is_final {&start_shape} else {self.phonemes.get_vowel_shape(vowel).unwrap()}).clone();
             let nasal_coupling = self.phonemes.get_nasal_coupling(vowel);
-            self.add_shape_transition(delay, 1000, start_shape, 0.0);
-            self.add_shape_transition(delay+1000, self.vowel_transition_time, end_shape, nasal_coupling);
+            self.add_shape_transition(delay, 1000, start_shape, 0.0, note_index);
+            self.add_shape_transition(delay+1000, self.vowel_transition_time, end_shape, nasal_coupling, note_index);
         }
         (delay_to_consonant, delay_to_vowel)
     }
@@ -513,11 +527,17 @@ impl Director {
     }
 
     /// Add a ShapeChange transition to the queue.
-    fn add_shape_transition(&mut self, delay: i64, duration: i64, mut end_shape: Vec<f32>, end_nasal_coupling: f32) {
+    fn add_shape_transition(&mut self, delay: i64, duration: i64, mut end_shape: Vec<f32>, end_nasal_coupling: f32, note_index: i32) {
         if end_nasal_coupling == 0.0 && self.brightness < 1.0 {
             let blend = (1.0-self.brightness)*0.2;
             for i in 0..end_shape.len() {
                 end_shape[i] = (1.0-blend)*end_shape[i] + blend*self.dark_shape[i];
+            }
+        }
+        if note_index > self.high_blend_note {
+            let blend = 0.1 * (note_index-self.high_blend_note) as f32 / (self.highest_note-self.high_blend_note) as f32;
+            for i in 0..end_shape.len() {
+                end_shape[i] = (1.0-blend)*end_shape[i] + blend*self.high_shape[i];
             }
         }
         let mut end_shapes = vec![end_shape; self.voices.len()];
