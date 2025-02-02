@@ -82,6 +82,7 @@ pub struct Director {
     lowest_note: i32,
     highest_note: i32,
     high_blend_note: i32,
+    high_blend_fraction: f32,
     phonemes: Phonemes,
     random: Random,
     step: i64,
@@ -132,6 +133,7 @@ impl Director {
             lowest_note: 0,
             highest_note: 0,
             high_blend_note: 0,
+            high_blend_fraction: 0.0,
             phonemes: Phonemes::new(voice_part),
             random: Random::new(),
             step: 0,
@@ -204,24 +206,28 @@ impl Director {
                 self.lowest_note = 57;
                 self.highest_note = 88;
                 self.high_blend_note = 72;
+                self.high_blend_fraction = 0.2;
             }
             VoicePart::Alto => {
                 vocal_length = 45;
                 self.lowest_note = 48;
                 self.highest_note = 79;
                 self.high_blend_note = 72;
+                self.high_blend_fraction = 0.15;
             }
             VoicePart::Tenor => {
                 vocal_length = 48;
                 self.lowest_note = 43;
                 self.highest_note = 72;
                 self.high_blend_note = 64;
+                self.high_blend_fraction = 0.1;
             }
             VoicePart::Bass => {
                 vocal_length = 50;
                 self.lowest_note = 36;
                 self.highest_note = 67;
                 self.high_blend_note = 60;
+                self.high_blend_fraction = 0.1;
             }
         }
         self.shape_after_transitions = vec![vec![0.0; vocal_length]; voice_count];
@@ -254,11 +260,22 @@ impl Director {
         let num_transitions = self.transitions.len();
         let num_consonants = self.consonants.len();
         let new_syllable = Syllable::build(syllable)?;
+        let mut delay_for_consonants = false;
+        let has_current_note = self.current_note.is_some();
         if let Some(note) = &self.current_note {
             if note.syllable.final_consonants.len() > 0 || new_syllable.initial_consonants.len() > 0 {
-                // Playing legato isn't possible, since there are consonants between the vowels.
+                // Smoothly blending the notes isn't possible, since there are consonants between the vowels.
                 // Finish the current note.
 
+                if note.syllable.final_consonants.len()+new_syllable.initial_consonants.len() > 1 {
+                    delay_for_consonants = true;
+                }
+                if note.syllable.final_consonants.len() == 1 && !self.phonemes.is_voiced_consonant(note.syllable.final_consonants[0]) {
+                    delay_for_consonants = true;
+                }
+                if new_syllable.initial_consonants.len() == 1 && !self.phonemes.is_voiced_consonant(new_syllable.initial_consonants[0]) {
+                    delay_for_consonants = true;
+                }
                 self.note_off(true);
             }
         }
@@ -267,11 +284,14 @@ impl Director {
         for transition in &self.transitions {
             delay = i64::max(delay, transition.end-self.step);
         }
-        let max_consonant_delay = self.consonant_delays.iter().max().unwrap();
-        for consonant in &self.consonants {
-            delay = i64::max(delay, consonant.start+consonant.on_time+consonant.off_time+max_consonant_delay-self.step);
+        if delay_for_consonants {
+            let max_consonant_delay = self.consonant_delays.iter().max().unwrap();
+            for consonant in &self.consonants {
+                delay = i64::max(delay, consonant.start+consonant.on_time+consonant.off_time+max_consonant_delay-self.step);
+            }
         }
         let mut prev_vowel = None;
+        let mut envelope_offset = 0;
         if let Some(note) = &self.current_note {
             // Play any final vowels from the previous note.
 
@@ -293,6 +313,10 @@ impl Director {
             delay += transition_time;
         }
         else {
+            // Set the frequency of the new note.
+
+            self.add_transition(delay, 1000, TransitionData::FrequencyChange {start_frequency: frequency, end_frequency: frequency});
+
             // Play any initial consonants from the new note.
 
             let adjacent_vowel = match new_syllable.initial_vowels.first() {
@@ -300,7 +324,8 @@ impl Director {
                 None => new_syllable.main_vowel
             };
             for i in 0..new_syllable.initial_consonants.len() {
-                let (delay_to_consonant, delay_to_vowel) = self.add_consonant(delay, new_syllable.initial_consonants[i], Some(adjacent_vowel), false, note_index);
+                let (delay_to_consonant, delay_to_vowel, offset) = self.add_consonant(delay, new_syllable.initial_consonants[i], Some(adjacent_vowel), false, note_index);
+                envelope_offset = offset;
                 if i == new_syllable.initial_consonants.len()-1 {
                     delay += delay_to_vowel;
                 }
@@ -308,10 +333,6 @@ impl Director {
                     delay += delay_to_consonant;
                 }
             }
-
-            // Set the frequency of the new note.
-
-            self.add_transition(delay, 0, TransitionData::FrequencyChange {start_frequency: frequency, end_frequency: frequency});
         }
 
         // Define a function that updates the start times of any transitions or consonants that were just added,
@@ -352,19 +373,11 @@ impl Director {
 
         let shape = self.phonemes.get_vowel_shape(new_syllable.main_vowel).unwrap().clone();
         let nasal_coupling = self.phonemes.get_nasal_coupling(new_syllable.main_vowel);
-        let transition_time = if self.current_note.is_some() || new_syllable.initial_vowels.len() > 0 || new_syllable.initial_consonants.len() > 0 {self.vowel_transition_time} else {0};
+        let transition_time = if has_current_note || new_syllable.initial_vowels.len() > 0 || new_syllable.initial_consonants.len() > 0 {self.vowel_transition_time} else {0};
         if prev_vowel.is_some() {
             self.add_vowel_transition(delay, prev_vowel.unwrap(), new_syllable.main_vowel, self.vowel_transition_time, note_index);
         }
         else {
-            if let Some(c) = self.consonants.last() {
-                if new_syllable.initial_vowels.len() == 0 {
-                    let consonant_shape = self.phonemes.get_consonant_shape(c, new_syllable.main_vowel);
-                    if consonant_shape.is_some() {
-                        self.add_shape_transition(delay, 0, consonant_shape.unwrap().clone(), self.nasal_coupling_after_transitions, note_index);
-                    }
-                }
-            };
             self.add_shape_transition(delay, transition_time, shape, nasal_coupling, note_index)
         }
 
@@ -373,12 +386,12 @@ impl Director {
         let amplification = self.phonemes.get_amplification(new_syllable.main_vowel);
         let max_amplitude = if self.accent {amplification*(1.0+2.5*velocity)} else {amplification};
         let attack_time = 1000+(10000.0*(1.0-self.attack_rate)) as i64;
-        self.add_transition(delay, attack_time, TransitionData::EnvelopeChange {
+        self.add_transition(delay-envelope_offset, attack_time, TransitionData::EnvelopeChange {
             start_envelope: self.envelope_after_transitions,
             end_envelope: max_amplitude
         });
         if self.accent {
-            self.add_transition(delay+attack_time, 4000, TransitionData::EnvelopeChange {
+            self.add_transition(delay-envelope_offset+attack_time, 4000, TransitionData::EnvelopeChange {
                 start_envelope: max_amplitude,
                 end_envelope: amplification
             });
@@ -432,20 +445,12 @@ impl Director {
             }
         }
         if consonants.len() > 0 {
-            if let Some(vowel) = final_vowel {
-                let consonant = self.phonemes.get_consonant(*consonants.last().unwrap(), true).unwrap();
-                let consonant_shape = self.phonemes.get_consonant_shape(&consonant, vowel);
-                if consonant_shape.is_some() {
-                    self.add_shape_transition(delay, 2000, consonant_shape.unwrap().clone(), 0.0, note_index);
-                    delay += 2000;
-                }
-            }
             let first_consonant = self.phonemes.get_consonant(consonants[0], true).unwrap();
             if first_consonant.voiced {
-                off_time = off_time.max(first_consonant.delay+first_consonant.transition_time+first_consonant.on_time);
+                off_time = off_time.max(first_consonant.transition_time);
             }
             for c in &consonants {
-                let (delay_to_consonant, _delay_to_vowel) = self.add_consonant(delay, *c, final_vowel, true, note_index);
+                let (delay_to_consonant, _delay_to_vowel, _envelope_offset) = self.add_consonant(delay, *c, final_vowel, true, note_index);
                 delay += delay_to_consonant;
             }
         }
@@ -492,15 +497,16 @@ impl Director {
 
     /// Play a consonant.  This adds a Consonant to the queue, and if necessary also adds a
     /// Transition to control the vocal tract shape appropriately.
-    fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool, note_index: i32) -> (i64, i64) {
+    fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool, note_index: i32) -> (i64, i64, i64) {
         let mut consonant = self.phonemes.get_consonant(c, is_final).unwrap();
         consonant.start = self.step+delay;
         consonant.volume *= 2.0*self.consonant_volume;
         if is_final {
             consonant.off_time = (consonant.off_time as f32 * 0.8) as i64;
         }
-        let delay_to_consonant = consonant.delay+consonant.on_time+consonant.off_time;
-        let delay_to_vowel = consonant.delay;
+        let delay_to_consonant = consonant.delay+consonant.on_time;
+        let mut delay_to_vowel = consonant.delay;
+        let mut envelope_offset = 0;
         if !consonant.mono {
             consonant.volume /= (self.voices.len() as f32).sqrt();
         }
@@ -511,8 +517,12 @@ impl Director {
             let nasal_coupling = self.phonemes.get_nasal_coupling(vowel);
             self.add_shape_transition(delay, 1000, start_shape, 0.0, note_index);
             self.add_shape_transition(delay+1000, self.vowel_transition_time, end_shape, nasal_coupling, note_index);
+            delay_to_vowel += self.vowel_transition_time;
+            if consonant.voiced {
+                envelope_offset = self.vowel_transition_time-1000;
+            }
         }
-        (delay_to_consonant, delay_to_vowel)
+        (delay_to_consonant, delay_to_vowel, envelope_offset)
     }
 
     /// Add a Transition to the queue.
@@ -542,7 +552,7 @@ impl Director {
             }
         }
         if note_index > self.high_blend_note {
-            let blend = 0.1 * (note_index-self.high_blend_note) as f32 / (self.highest_note-self.high_blend_note) as f32;
+            let blend = self.high_blend_fraction * (note_index-self.high_blend_note) as f32 / (self.highest_note-self.high_blend_note) as f32;
             for i in 0..end_shape.len() {
                 end_shape[i] = (1.0-blend)*end_shape[i] + blend*self.high_shape[i];
             }

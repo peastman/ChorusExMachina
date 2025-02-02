@@ -25,6 +25,7 @@ pub struct Phonemes {
     nasal_vowels: HashSet<char>,
     consonant_map: HashMap<char, Consonant>,
     final_consonant_map: HashMap<char, Consonant>,
+    voiced_consonants: HashSet<char>,
     amplification: HashMap<char, f32>
 }
 
@@ -182,6 +183,7 @@ impl Phonemes {
             nasal_vowels: nasal_vowels,
             consonant_map: HashMap::new(),
             final_consonant_map: HashMap::new(),
+            voiced_consonants: HashSet::new(),
             amplification: amplification
         };
         result.add_consonant('b', 100, 2700, 300, 1500, 0.004, 46, 700.0, 4300.0, false, false, 'p', 1.0, true, false);
@@ -192,7 +194,7 @@ impl Phonemes {
         result.add_consonant('f', 2500, 4000, 2000, 2000, 0.008, 46, 1500.0, 5000.0, true, false, ' ', 1.0, true, true);
         result.add_consonant('g', 600, 2700, 200, 750, 0.008, 32, 1025.0, 5200.0, false, false, 'k', 0.25, true, false);
         result.add_consonant('g', 600, 2700, 200, 750, 0.005, 32, 1025.0, 5200.0, false, false, 'k', 0.8, true, true);
-        result.add_consonant('h', 3000, 1000, 2000, 4000, 0.003, 11, 1000.0, 5000.0, false, false, ' ', 1.0, false, false);
+        result.add_consonant('h', 1500, 1000, 2000, 4000, 0.003, 11, 1000.0, 5000.0, false, false, ' ', 1.0, false, false);
         result.add_consonant('j', 0, 3000, 0, 0, 0.0, 1, 4150.0, 6500.0, false, false, 'i', 0.25, false, false);
         result.add_consonant('k', 500, 1500, 900, 1100, 0.015, 35, 4200.0, 6000.0, false, false, 'k', 0.8, true, false);
         result.add_consonant('k', 500, 1500, 900, 1100, 0.012, 35, 4200.0, 6000.0, false, false, 'k', 0.8, true, true);
@@ -204,7 +206,7 @@ impl Phonemes {
         result.add_consonant('t', 300, 1500, 850, 1500, 0.009, 42, 2000.0, 6000.0, false, false, 't', 1.0, true, true);
         result.add_consonant('v', 700, 4000, 2000, 2000, 0.011, 46, 1400.0, 5000.0, true, true, ' ', 1.0, true, false);
         result.add_consonant('v', 700, 4000, 2000, 2000, 0.007, 46, 1400.0, 5000.0, true, true, ' ', 1.0, true, false);
-        result.add_consonant('w', 0, 3500, 0, 0, 0.0, 48, 4150.0, 6500.0, false, false, 'u', 1.0, true, false);
+        result.add_consonant('w', 0, 3500, 0, 0, 0.0, 48, 4150.0, 6500.0, false, true, 'u', 1.0, true, false);
         result.add_consonant('x', 3000, 1000, 2000, 4000, 0.005, 16, 1000.0, 3000.0, false, false, ' ', 1.0, false, false);
         result.add_consonant('z', 100, 3000, 4000, 2000, 0.017, 47, 5000.0, 500.0, true, true, 'S', 1.0, true, false);
         result.add_consonant('z', 100, 3000, 4000, 2000, 0.01, 47, 5000.0, 400.0, true, true, 'S', 0.9, true, true);
@@ -257,6 +259,9 @@ impl Phonemes {
         else {
             self.consonant_map.insert(sampa, consonant);
         }
+        if voiced {
+            self.voiced_consonants.insert(sampa);
+        }
     }
 
     /// Get the vocal tract shape (cross-sectional areas for each segment) corresponding to a vowel.
@@ -293,6 +298,11 @@ impl Phonemes {
             Some(c) => Some(*c),
             None => None
         }
+    }
+
+    /// Get whether a consonant is voiced.
+    pub fn is_voiced_consonant(&self, consonant: char) -> bool {
+        self.voiced_consonants.contains(&consonant)
     }
 
     /// Get the vocal tract shape to use when pronouncing a consonant.  This is created by blending
