@@ -288,16 +288,25 @@ impl Phonemes {
     }
 
     /// Get a description of how to synthesize a consonant.
-    pub fn get_consonant(&self, consonant: char, is_final: bool) -> Option<Consonant> {
+    pub fn get_consonant(&self, consonant: char, is_final: bool, time_scale: f32) -> Option<Consonant> {
+        let mut result = None;
         if is_final {
             if let Some(c) = self.final_consonant_map.get(&consonant) {
-                return Some(*c);
+                result = Some(*c);
             }
         }
-        match self.consonant_map.get(&consonant) {
-            Some(c) => Some(*c),
-            None => None
+        if result.is_none() {
+            if let Some(c) = self.consonant_map.get(&consonant) {
+                result = Some(*c);
+            }
         }
+        if let Some(mut c) = result {
+            c.delay = (time_scale*c.delay as f32) as i64;
+            c.transition_time = (time_scale*c.transition_time as f32) as i64;
+            c.on_time = (time_scale*c.on_time as f32) as i64;
+            c.off_time = (time_scale*c.off_time as f32) as i64;
+        }
+        result
     }
 
     /// Get whether a consonant is voiced.

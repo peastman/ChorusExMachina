@@ -250,7 +250,7 @@ impl Director {
 
         if note_index < self.lowest_note || note_index > self.highest_note {
             if self.current_note.is_some() {
-                self.note_off(false);
+                self.note_off(false, false);
             }
             return Ok(());
         }
@@ -276,7 +276,7 @@ impl Director {
                 if new_syllable.initial_consonants.len() == 1 && !self.phonemes.is_voiced_consonant(new_syllable.initial_consonants[0]) {
                     delay_for_consonants = true;
                 }
-                self.note_off(true);
+                self.note_off(true, new_syllable.initial_consonants.len() > 0);
             }
         }
         let frequency = 440.0 * f32::powf(2.0, (note_index-69) as f32/12.0);
@@ -324,7 +324,8 @@ impl Director {
                 None => new_syllable.main_vowel
             };
             for i in 0..new_syllable.initial_consonants.len() {
-                let (delay_to_consonant, delay_to_vowel, offset) = self.add_consonant(delay, new_syllable.initial_consonants[i], Some(adjacent_vowel), false, note_index);
+                let time_scale = if i < new_syllable.initial_consonants.len()-1 {0.8} else {1.0};
+                let (delay_to_consonant, delay_to_vowel, offset) = self.add_consonant(delay, new_syllable.initial_consonants[i], Some(adjacent_vowel), false, note_index, time_scale);
                 envelope_offset = offset;
                 if i == new_syllable.initial_consonants.len()-1 {
                     delay += delay_to_vowel;
@@ -410,7 +411,7 @@ impl Director {
 
     /// End the current note.  Because this is a monophonic instrument, note_on() automatically
     /// ends the current note as well.
-    fn note_off(&mut self, legato: bool) {
+    fn note_off(&mut self, legato: bool, has_more_consonants: bool) {
         let mut delay = 0;
         for transition in &self.transitions {
             delay = i64::max(delay, transition.end-self.step);
@@ -445,12 +446,13 @@ impl Director {
             }
         }
         if consonants.len() > 0 {
-            let first_consonant = self.phonemes.get_consonant(consonants[0], true).unwrap();
+            let first_consonant = self.phonemes.get_consonant(consonants[0], true, 1.0).unwrap();
             if first_consonant.voiced {
                 off_time = off_time.max(first_consonant.transition_time);
             }
-            for c in &consonants {
-                let (delay_to_consonant, _delay_to_vowel, _envelope_offset) = self.add_consonant(delay, *c, final_vowel, true, note_index);
+            for (i, c) in consonants.iter().enumerate() {
+                let time_scale = if has_more_consonants || i < consonants.len()-1 {0.8} else {1.0};
+                let (delay_to_consonant, _delay_to_vowel, _envelope_offset) = self.add_consonant(delay, *c, final_vowel, true, note_index, time_scale);
                 delay += delay_to_consonant;
             }
         }
@@ -497,14 +499,14 @@ impl Director {
 
     /// Play a consonant.  This adds a Consonant to the queue, and if necessary also adds a
     /// Transition to control the vocal tract shape appropriately.
-    fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool, note_index: i32) -> (i64, i64, i64) {
-        let mut consonant = self.phonemes.get_consonant(c, is_final).unwrap();
+    fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool, note_index: i32, time_scale: f32) -> (i64, i64, i64) {
+        let mut consonant = self.phonemes.get_consonant(c, is_final, time_scale).unwrap();
         consonant.start = self.step+delay;
         consonant.volume *= 2.0*self.consonant_volume;
         if is_final {
             consonant.off_time = (consonant.off_time as f32 * 0.8) as i64;
         }
-        let delay_to_consonant = consonant.delay+consonant.on_time;
+        let delay_to_consonant = consonant.delay+consonant.on_time+consonant.off_time;
         let mut delay_to_vowel = consonant.delay;
         let mut envelope_offset = 0;
         if !consonant.mono {
@@ -661,7 +663,7 @@ impl Director {
                             let _ = self.note_on(&syllable, note_index, velocity);
                         }
                         Message::NoteOff => {
-                            self.note_off(false);
+                            self.note_off(false, false);
                         }
                         Message::SetVolume {volume} => {
                             self.volume = volume;
