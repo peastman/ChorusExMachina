@@ -1,6 +1,6 @@
 [package]
 name = "chorus_ex_machina"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 homepage = "https://github.com/peastman/ChorusExMachina"
 description = "A physically modelled chorus synthesizer"
