@@ -434,7 +434,7 @@ impl Director {
         // Determine how quickly to stop the sound.  This may get modified if the first final consonant
         // is voiced.
 
-        let stop_envelope_time = delay;
+        let mut stop_envelope_time = delay;
         let mut off_time = if legato {1500} else {1000 + (6000.0*(1.0-self.release_rate)) as i64};
 
         // Play any final consonants.
@@ -447,10 +447,11 @@ impl Director {
         }
         if consonants.len() > 0 {
             let first_consonant = self.phonemes.get_consonant(consonants[0], true, 1.0).unwrap();
+            stop_envelope_time += first_consonant.delay;
             if first_consonant.voiced {
                 off_time = off_time.max(first_consonant.transition_time);
             }
-            for (i, c) in consonants.iter().enumerate() {
+            for c in &consonants {
                 let time_scale = if legato {0.8} else {1.0};
                 let (delay_to_consonant, _delay_to_vowel, _envelope_offset) = self.add_consonant(delay, *c, final_vowel, true, note_index, time_scale);
                 delay += delay_to_consonant;
@@ -474,7 +475,7 @@ impl Director {
             let nasal_coupling = self.phonemes.get_nasal_coupling(c);
             self.add_shape_transition(delay, vowel_transition_time, shape.clone(), nasal_coupling, note_index);
         }
-        let scale = if is_final {0.2} else {0.7};
+        let scale = if is_final {0.3} else {0.7};
         let amplification = scale*self.phonemes.get_amplification(c);
         self.add_transition(delay, vowel_transition_time, TransitionData::EnvelopeChange {
             start_envelope: self.envelope_after_transitions,
@@ -518,10 +519,10 @@ impl Director {
             let end_shape = (if is_final {&start_shape} else {self.phonemes.get_vowel_shape(vowel).unwrap()}).clone();
             let nasal_coupling = self.phonemes.get_nasal_coupling(vowel);
             self.add_shape_transition(delay, 1000, start_shape, 0.0, note_index);
-            self.add_shape_transition(delay+1000, self.vowel_transition_time, end_shape, nasal_coupling, note_index);
-            delay_to_vowel += self.vowel_transition_time;
+            self.add_shape_transition(delay+1000, consonant.transition_time, end_shape, nasal_coupling, note_index);
+            delay_to_vowel += consonant.transition_time;
             if consonant.voiced {
-                envelope_offset = self.vowel_transition_time-1000;
+                envelope_offset = consonant.transition_time-1000;
             }
         }
         (delay_to_consonant, delay_to_vowel, envelope_offset)
