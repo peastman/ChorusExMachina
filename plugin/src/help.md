@@ -96,7 +96,8 @@ Chorus Ex Machina is a monophonic instrument: each instance plays only one note 
 create splits within a section use multiple tracks, each with its own instance of the plugin.  If you
 press a new note before releasing the previous one, it is played legato, smoothly blending between
 them.  Smooth transitions are only possible between vowels, however.  If there are any consonants
-in between, they necessarily create a break in the sound.
+in between, they necessarily create a break in the sound, but it will shorten the consonants to
+minimize the gap.
 
 You can optionally add an accent to the beginning of each separated (non-legato) note.  When this
 option is enabled, the strength of the accent is determined by the key velocity.
