@@ -447,9 +447,12 @@ impl Director {
         }
         if consonants.len() > 0 {
             let first_consonant = self.phonemes.get_consonant(consonants[0], true, 1.0).unwrap();
-            stop_envelope_time += first_consonant.delay;
             if first_consonant.voiced {
+                stop_envelope_time += first_consonant.delay;
                 off_time = off_time.max(first_consonant.transition_time);
+            }
+            else {
+                off_time = off_time.min(first_consonant.transition_time);
             }
             for c in &consonants {
                 let time_scale = if legato {0.8} else {1.0};
