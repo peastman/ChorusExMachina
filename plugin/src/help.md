@@ -88,7 +88,33 @@ Several different sounds can be used for the letter R, depending on the language
   used in choral singing, and is not supported by Chorus Ex Machina.  It usually is changed to `4`,
   or occasionally to `r`.
 - When R appears as a final consonant, it sometimes is omitted.  For example, the Latin word
-  "eterna" is often sung as `E tE nA`.
+  "eterna" is often sung as `E tE nA`.  Alternatively, it may be replaced by a neutral vowel such
+  as `@` or `9`.
+
+**Choosing vowels**
+
+Your choices of what vowels to use are important for creating a natural sound.  The vowels used in
+singing, and especially in choral singing, are often different from the ones used when speaking.
+There are many vowels that sound very similar to each other.  Some examples are
+
+- `A` and `a`
+- `i` and `y`
+- `@`, `V`, and `9`
+
+Which one sounds best depends not only on the word being sung but also on the pitch, the voice
+part, the surrounding words, and the style of music.  Consider the English word "I".  It can be
+pronounced in many subtly different ways: `Ai`, `Ae`, `AI`, `a-I`, etc.  If a note sounds harsh
+or unnatural, experiment with different vowels to find the combination that sounds best.
+
+**Placing consonants**
+
+Consonants can appear both at the beginning and the end of a syllable.  Many consonants sound slightly
+different depending on the position.  Initial consonants tend to be slightly louder and longer than
+final consonants.
+
+When a consonant appears between two vowels that are sung legato (see below), you can choose which
+position to put it in.  For example, the word "open" can be pronounced either as `op En` or `o pEn`.
+Each one involves the same series of sounds, but the "p" is pronounced differently.
 
 # Playing
 
