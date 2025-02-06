@@ -505,7 +505,7 @@ impl Director {
     /// Transition to control the vocal tract shape appropriately.
     fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool, note_index: i32, time_scale: f32) -> (i64, i64, i64) {
         let mut consonant = self.phonemes.get_consonant(c, is_final, time_scale).unwrap();
-        consonant.start = self.step+delay;
+        consonant.start = self.step+delay+consonant.delay;
         consonant.volume *= 2.0*self.consonant_volume;
         if is_final {
             consonant.off_time = (consonant.off_time as f32 * 0.8) as i64;
@@ -557,7 +557,7 @@ impl Director {
                 end_shape[i] = (1.0-blend)*end_shape[i] + blend*self.dark_shape[i];
             }
         }
-        if note_index > self.high_blend_note {
+        if note_index > self.high_blend_note && end_nasal_coupling == 0.0 {
             let blend = self.high_blend_fraction * (note_index-self.high_blend_note) as f32 / (self.highest_note-self.high_blend_note) as f32;
             for i in 0..end_shape.len() {
                 end_shape[i] = (1.0-blend)*end_shape[i] + blend*self.high_shape[i];
