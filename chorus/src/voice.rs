@@ -33,6 +33,7 @@ pub struct Glottis {
     pub vibrato_amplitude: f32,
     pub vibrato_frequency_drift_amplitude: f32,
     pub vibrato_amplitude_drift_amplitude: f32,
+    pub tremolo_amplitude: f32,
     phase: f32,
     frequency_drift: f32,
     volume_drift: f32,
@@ -64,6 +65,7 @@ impl Glottis {
             vibrato_amplitude: 0.02,
             vibrato_frequency_drift_amplitude: 0.05,
             vibrato_amplitude_drift_amplitude: 0.4,
+            tremolo_amplitude: 0.2,
             phase: random.get_uniform(),
             frequency_drift: random.get_normal(),
             volume_drift: random.get_normal(),
@@ -142,6 +144,7 @@ impl Glottis {
         else {
             excitation = noise + ((-self.epsilon*(t-self.te)).exp() - self.shift)/(self.epsilon*self.ta)
         }
+        excitation *= 1.0+self.tremolo_amplitude*((2.0*PI*self.vibrato_phase).sin());
         excitation += 1.2*self.formant.process(excitation);
         volume*excitation
     }
@@ -300,6 +303,11 @@ impl Voice {
     /// Set the amplitude of vibrato.
     pub fn set_vibrato_amplitude(&mut self, amplitude: f32) {
         self.glottis.vibrato_amplitude = amplitude;
+    }
+
+    /// Set the amplitude of tremolo.
+    pub fn set_tremolo_amplitude(&mut self, amplitude: f32) {
+        self.glottis.tremolo_amplitude = amplitude;
     }
 
     /// Generate the next audio sample.  Arguments are the current sample index, the noise signal

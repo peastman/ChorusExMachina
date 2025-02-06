@@ -305,7 +305,7 @@ impl Director {
 
             // Smoothly transition between the two notes.
 
-            let transition_time = (1100 + 270*(current_note_index-note_index).abs()) as i64;
+            let transition_time = (1000 + 50*(current_note_index-note_index).abs()) as i64;
             self.add_transition(delay, transition_time, TransitionData::FrequencyChange {start_frequency: self.frequency_after_transitions, end_frequency: frequency});
             let min_envelope = f32::powf(0.9, (current_note_index-note_index).abs() as f32);
             self.add_transition(delay, transition_time/2, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: min_envelope});
@@ -806,8 +806,10 @@ impl Director {
     /// being played.
     fn update_sound(&mut self) {
         let noise = 0.05*(1.0-self.volume)*(1.0-self.volume);
+        let tremolo = 0.4*self.intensity;
         for voice in &mut self.voices {
             voice.set_noise(noise);
+            voice.set_tremolo_amplitude(tremolo);
         }
         if let Some(note) = &self.current_note {
             let x = (self.highest_note-note.note_index) as f32 / (self.highest_note-self.lowest_note) as f32;
