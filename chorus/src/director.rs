@@ -89,10 +89,11 @@ pub struct Director {
     transitions: Vec<Transition>,
     current_note: Option<Note>,
     consonants: Vec<Consonant>,
-    consonant_delays: Vec<i64>,
+    max_voice_delay: i64,
+    voice_delays: Vec<i64>,
     volume: f32,
-    envelope: f32,
-    frequency: f32,
+    envelope: Vec<f32>,
+    frequency: Vec<f32>,
     bend: f32,
     vibrato: f32,
     intensity: f32,
@@ -140,10 +141,11 @@ impl Director {
             transitions: vec![],
             current_note: None,
             consonants: vec![],
-            consonant_delays: vec![],
+            max_voice_delay: 700,
+            voice_delays: vec![],
             volume: 1.0,
-            envelope: 0.0,
-            frequency: 1.0,
+            envelope: vec![],
+            frequency: vec![],
             bend: 1.0,
             vibrato: 0.4,
             intensity: 0.5,
@@ -189,12 +191,19 @@ impl Director {
         self.transitions.clear();
         self.current_note = None;
         self.consonants.clear();
-        self.consonant_delays = Vec::new();
-        for _ in 0..voice_count {
-            self.consonant_delays.push((self.random.get_int()%1000) as i64);
+        self.voice_delays.clear();
+        if voice_count == 1 {
+            self.voice_delays.push(0);
+        }
+        else {
+            for i in 0..voice_count {
+                let index = ((i+(voice_count/2)) % voice_count) as i64;
+                self.voice_delays.push(self.max_voice_delay*index/(voice_count-1) as i64);
+            }
         }
         self.voice_pan = vec![0.0; voice_count];
-        self.envelope = 0.0;
+        self.envelope = vec![0.0; voice_count];
+        self.frequency = vec![0.0; voice_count];
         self.bend = 1.0;
         self.nasal_coupling_after_transitions = 0.0;
         self.envelope_after_transitions = 0.0;
@@ -285,9 +294,8 @@ impl Director {
             delay = i64::max(delay, transition.end-self.step);
         }
         if delay_for_consonants {
-            let max_consonant_delay = self.consonant_delays.iter().max().unwrap();
             for consonant in &self.consonants {
-                delay = i64::max(delay, consonant.start+consonant.on_time+consonant.off_time+max_consonant_delay-self.step);
+                delay = i64::max(delay, consonant.start+consonant.on_time+consonant.off_time+self.max_voice_delay-self.step);
             }
         }
         let mut prev_vowel = None;
@@ -591,8 +599,13 @@ impl Director {
         // return without doing any work.
 
         self.step += 1;
-        if self.envelope > 0.0 || self.consonants.len() != 0 {
+        if self.consonants.len() != 0 {
             self.off_after_step = self.step+500;
+        }
+        for e in &self.envelope {
+            if *e > 0.0 {
+                self.off_after_step = self.step+500;
+            }
         }
         let mut left = 0.0;
         let mut right = 0.0;
@@ -613,7 +626,7 @@ impl Director {
                     // Others are sung by ever voice.
 
                     if !consonant.mono || i == self.voices.len()/2 {
-                        let j = self.step-consonant.start-self.consonant_delays[i];
+                        let j = self.step-consonant.start-self.voice_delays[i];
                         if j > 0 {
                             consonant_position = consonant.position;
                             if j < consonant.on_time {
@@ -643,11 +656,6 @@ impl Director {
             }
             if consonant_finished {
                 self.consonants.remove(0);
-                for i in 0..self.consonant_delays.len() {
-                    if i != self.consonant_delays.len()/2 {
-                        self.consonant_delays[i] = (self.random.get_int()%1000) as i64;
-                    }
-                }
             }
         }
         (0.08*left, 0.08*right)
@@ -739,20 +747,22 @@ impl Director {
     /// This is called occasionally by generate().  It processes any Transitions in the queue,
     /// updating the voices as appropriate.
     fn update_transitions(&mut self) {
-        for i in 0..self.transitions.len() {
-            let transition = &self.transitions[i];
-            if self.step >= transition.start {
-                let fraction = (self.step-transition.start) as f32 / (transition.end-transition.start) as f32;
-                let weight2 = if self.step < transition.end {0.5-0.5*(fraction*std::f32::consts::PI).cos()} else {1.0};
-                let weight1 = 1.0-weight2;
-                match &transition.data {
-                    TransitionData::EnvelopeChange {start_envelope, end_envelope} => {
-                        self.envelope = weight1*start_envelope + weight2*end_envelope;
-                        self.update_volume();
-                    }
-                    TransitionData::ShapeChange {start_shape, end_shape, start_nasal_coupling, end_nasal_coupling} => {
-                        let coupling = weight1*start_nasal_coupling + weight2*end_nasal_coupling;
-                        for i in 0..self.voices.len() {
+        let mut volume_changed = false;
+        let mut frequency_changed = false;
+        for transition in &self.transitions {
+            for i in 0..self.voices.len() {
+                let j = self.step-self.voice_delays[i];
+                if j >= transition.start {
+                    let fraction = (j-transition.start) as f32 / (transition.end-transition.start) as f32;
+                    let weight2 = if j < transition.end {0.5-0.5*(fraction*std::f32::consts::PI).cos()} else {1.0};
+                    let weight1 = 1.0-weight2;
+                    match &transition.data {
+                        TransitionData::EnvelopeChange {start_envelope, end_envelope} => {
+                            self.envelope[i] = weight1*start_envelope + weight2*end_envelope;
+                            volume_changed = true;
+                        }
+                        TransitionData::ShapeChange {start_shape, end_shape, start_nasal_coupling, end_nasal_coupling} => {
+                            let coupling = weight1*start_nasal_coupling + weight2*end_nasal_coupling;
                             let n = start_shape[i].len();
                             let mut shape = vec![0.0; n];
                             for j in 0..n {
@@ -760,31 +770,37 @@ impl Director {
                             }
                             self.voices[i].set_vocal_shape(&shape, coupling);
                         }
-                    }
-                    TransitionData::FrequencyChange {start_frequency, end_frequency} => {
-                        self.frequency = weight1*start_frequency + weight2*end_frequency;
-                        self.update_frequency();
+                        TransitionData::FrequencyChange {start_frequency, end_frequency} => {
+                            self.frequency[i] = weight1*start_frequency + weight2*end_frequency;
+                            frequency_changed = true;
+                        }
                     }
                 }
             }
         }
-        self.transitions.retain(|t| self.step < t.end);
+        if volume_changed {
+            self.update_volume();
+        }
+        if frequency_changed {
+            self.update_frequency();
+        }
+        self.transitions.retain(|t| self.step < t.end+self.max_voice_delay);
     }
 
     /// Update the volumes of all Voices.  This is called whenever the Director's volume or
     /// envelope is changed.
     fn update_volume(&mut self) {
-        let actual_volume = 0.1+0.9*self.volume;
-        for voice in &mut self.voices {
-            voice.set_volume(actual_volume*self.envelope);
+        let actual_volume = 0.05+0.95*self.volume;
+        for i in 0..self.voices.len() {
+            self.voices[i].set_volume(actual_volume*self.envelope[i]);
         }
     }
 
     /// Update the frequencies of all Voices.  This is called whenever the Director's frequency or
     /// pitch bend is changed.
     fn update_frequency(&mut self) {
-        for voice in &mut self.voices {
-            voice.set_frequency(self.frequency*self.bend);
+        for i in 0..self.voices.len() {
+            self.voices[i].set_frequency(self.frequency[i]*self.bend);
         }
     }
 
