@@ -486,7 +486,7 @@ impl Director {
             let nasal_coupling = self.phonemes.get_nasal_coupling(c);
             self.add_shape_transition(delay, vowel_transition_time, shape.clone(), nasal_coupling, note_index);
         }
-        let scale = if is_final {0.3} else {0.7};
+        let scale = if is_final {0.25} else {0.7};
         let amplification = scale*self.phonemes.get_amplification(c);
         self.add_transition(delay, vowel_transition_time, TransitionData::EnvelopeChange {
             start_envelope: self.envelope_after_transitions,
@@ -531,9 +531,9 @@ impl Director {
             let nasal_coupling = self.phonemes.get_nasal_coupling(vowel);
             self.add_shape_transition(delay, 1000, start_shape, 0.0, note_index);
             self.add_shape_transition(delay+1000, consonant.transition_time, end_shape, nasal_coupling, note_index);
-            delay_to_vowel += consonant.transition_time;
+            delay_to_vowel += consonant.transition_time+1000;
             if consonant.voiced {
-                envelope_offset = consonant.transition_time-1000;
+                envelope_offset = consonant.transition_time;
             }
         }
         (delay_to_consonant, delay_to_vowel, envelope_offset)
