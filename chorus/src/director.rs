@@ -366,12 +366,14 @@ impl Director {
         // Play any initial vowels.
 
         let mut has_updated_starts = false;
+        let mut attack_time = if new_syllable.initial_consonants.len() == 0 {1000+(10000.0*(1.0-self.attack_rate)) as i64} else {0};
         for c in &new_syllable.initial_vowels {
             if !has_updated_starts && *c != 'l' && *c != 'm' && *c != 'n' {
                 update_starts(self, &mut delay, &mut has_updated_starts);
             }
             let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, false);
-            delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time, false, note_index);
+            delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time.max(attack_time), false, note_index);
+            attack_time = 0;
             prev_vowel = Some(*c);
         }
         if !has_updated_starts {
@@ -394,8 +396,8 @@ impl Director {
 
         let amplification = self.phonemes.get_amplification(new_syllable.main_vowel);
         let max_amplitude = if self.accent {amplification*(1.0+2.5*velocity)} else {amplification};
-        let attack_time = 1000+(10000.0*(1.0-self.attack_rate)) as i64;
-        self.add_transition(delay-envelope_offset, attack_time, TransitionData::EnvelopeChange {
+        let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(new_syllable.main_vowel, false);
+        self.add_transition(delay-envelope_offset, vowel_transition_time.max(attack_time), TransitionData::EnvelopeChange {
             start_envelope: self.envelope_after_transitions,
             end_envelope: max_amplitude
         });
