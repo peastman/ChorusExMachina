@@ -87,7 +87,7 @@ impl Syllable {
         }
         else {
             for (i, c) in vowels.iter().enumerate() {
-                if *c == 'A' || vowels[main] == 'm' || vowels[main] == 'n' || vowels[main] == 'N' {
+                if *c == 'A' || *c == 'a' || vowels[main] == 'm' || vowels[main] == 'n' || vowels[main] == 'N' {
                     main = i;
                 }
                 else if (vowels[main] == 'l' || vowels[main] == '3') && (*c != 'm' && *c != 'n' && *c != 'N') {

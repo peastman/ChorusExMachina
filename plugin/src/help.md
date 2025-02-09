@@ -103,10 +103,10 @@ There are many vowels that sound very similar to each other.  Some examples are
 
 Which one sounds best depends not only on the word being sung but also on the pitch, the voice
 part, the surrounding words, and the style of music.  Consider the English word "I".  It can be
-pronounced in many subtly different ways: `Ai`, `Ae`, `AI`, `a-I`, etc.  If a note sounds harsh
+pronounced in many subtly different ways: `Ai`, `Ae`, `AI`, `aI`, etc.  If a note sounds harsh
 or unnatural, experiment with different vowels to find the combination that sounds best.
 
-**Placing consonants**
+**Placing consonants and transient vowels**
 
 Consonants can appear both at the beginning and the end of a syllable.  Many consonants sound slightly
 different depending on the position.  Initial consonants tend to be slightly louder and longer than
@@ -115,6 +115,10 @@ final consonants.
 When a consonant appears between two vowels that are sung legato (see below), you can choose which
 position to put it in.  For example, the word "open" can be pronounced either as `op En` or `o pEn`.
 Each one involves the same series of sounds, but the "p" is pronounced differently.
+
+The same is true of transient vowels.  Consider the word "around".  It can be pronounced either as
+`@3 aUnd` or `@ 3aUnd`.  The latter puts more emphasis on the `3`, which corresponds to the letter
+"r".
 
 # Playing
 
