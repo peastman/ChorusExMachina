@@ -313,9 +313,9 @@ impl Director {
 
             // Smoothly transition between the two notes.
 
-            let transition_time = (1000 + 50*(current_note_index-note_index).abs()) as i64;
+            let transition_time = (1000 + 150*(current_note_index-note_index).abs()) as i64;
             self.add_transition(delay, transition_time, TransitionData::FrequencyChange {start_frequency: self.frequency_after_transitions, end_frequency: frequency});
-            let min_envelope = f32::powf(0.9, (current_note_index-note_index).abs() as f32);
+            let min_envelope = f32::powf(0.85, (current_note_index-note_index).abs() as f32);
             self.add_transition(delay, transition_time/2, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: min_envelope});
             self.add_transition(delay+transition_time/2, transition_time/2, TransitionData::EnvelopeChange {start_envelope: min_envelope, end_envelope: 1.0});
             delay += transition_time;
@@ -396,7 +396,7 @@ impl Director {
 
         let amplification = self.phonemes.get_amplification(new_syllable.main_vowel);
         let max_amplitude = if self.accent {amplification*(1.0+2.5*velocity)} else {amplification};
-        let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(new_syllable.main_vowel, false);
+        let (_vowel_delay, vowel_transition_time) = self.get_vowel_timing(new_syllable.main_vowel, false);
         self.add_transition(delay-envelope_offset, vowel_transition_time.max(attack_time), TransitionData::EnvelopeChange {
             start_envelope: self.envelope_after_transitions,
             end_envelope: max_amplitude
