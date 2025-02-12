@@ -88,7 +88,7 @@ impl MidiController {
 fn process_midi_message(_timestamp: u64, message: &[u8], data: &mut Arc<Mutex<MidiController>>) {
     let mut controller = data.lock().unwrap();
     if message[0] == 144 && controller.syllables.len() > 0 {
-        let _ = controller.sender.send(Message::NoteOn {syllable: controller.syllables[controller.next_syllable].clone(), note_index: message[1] as i32, velocity: message[2] as f32 / 127.0});
+        let _ = controller.sender.send(Message::NoteOn {syllable: controller.syllables[controller.next_syllable].clone(), note_index: message[1] as i32, velocity: message[2] as f32 / 127.0, continue_syllable: false});
         controller.next_syllable = (controller.next_syllable+1)%controller.syllables.len();
         controller.last_note = message[1];
     }

@@ -6,8 +6,9 @@ the next syllable.  When it reaches the end of the current phrase, it loops back
 
 You can enter up to 128 phrases.  To select the phrase to sing, click on it in the table.  To automate it in a DAW, set the parameter
 "Selected Phrase" to the index of the phrase to sing.  You can use the "Advance Syllable" parameter to temporarily disable advancing
-to the next syllable.  When this option is off, every note continues to use the same syllable until it is turned back on.  This is
-useful when a phrase is sung repeatedly, but the number of notes each syllable is used for changes between repetitions.
+to the next syllable.  When this option is off, every note continues to repeat the same syllable until it is turned back on.
+Alternatively, if you play legato (see below), it extends a single syllable across multiple notes.  This is useful when a phrase is
+sung repeatedly, but the number of notes each syllable is used for changes between repetitions.
 
 A syllable consists of
 

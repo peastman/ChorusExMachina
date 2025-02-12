@@ -26,7 +26,7 @@ use std::sync::mpsc;
 /// note on, note off, and various control channels.
 pub enum Message {
     Reinitialize {voice_part: VoicePart, voice_count: usize},
-    NoteOn {syllable: String, note_index: i32, velocity: f32},
+    NoteOn {syllable: String, note_index: i32, velocity: f32, continue_syllable: bool},
     NoteOff,
     SetVolume {volume: f32},
     SetPitchBend {semitones: f32},
@@ -181,6 +181,8 @@ impl Director {
         result
     }
 
+    /// Initialize the set of voices controlled by this Director.  This is called when it is first
+    /// created, and again whenever a Reinitialize message is received.
     fn initialize_voices(&mut self, voice_part: VoicePart, voice_count: usize) {
         self.voice_part = voice_part.clone();
         self.voices.clear();
@@ -253,7 +255,7 @@ impl Director {
     }
 
     /// Start singing a new note.
-    fn note_on(&mut self, syllable: &str, note_index: i32, velocity: f32) -> Result<(), &'static str> {
+    fn note_on(&mut self, syllable: &str, note_index: i32, velocity: f32, continue_syllable: bool) -> Result<(), &'static str> {
         // If the note index is outside the range of this voice part, just stop the current
         // note and exit.
 
@@ -271,8 +273,14 @@ impl Director {
         let new_syllable = Syllable::build(syllable)?;
         let mut delay_for_consonants = false;
         let has_current_note = self.current_note.is_some();
+        let mut continuous = false;
         if let Some(note) = &self.current_note {
-            if note.syllable.final_consonants.len() > 0 || new_syllable.initial_consonants.len() > 0 {
+            if continue_syllable && note.syllable.main_vowel == new_syllable.main_vowel {
+                // Treat the previous and new notes as a single syllable, continuing on the same vowel.
+
+                continuous = true;
+            }
+            else if note.syllable.final_consonants.len() > 0 || new_syllable.initial_consonants.len() > 0 {
                 // Smoothly blending the notes isn't possible, since there are consonants between the vowels.
                 // Finish the current note.
 
@@ -301,14 +309,16 @@ impl Director {
         let mut prev_vowel = None;
         let mut envelope_offset = 0;
         if let Some(note) = &self.current_note {
-            // Play any final vowels from the previous note.
-
             let current_note_index = note.note_index;
-            prev_vowel = Some(note.syllable.main_vowel);
-            for c in &note.syllable.final_vowels.clone() {
-                let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, true);
-                delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time, true, current_note_index);
-                prev_vowel = Some(*c);
+            if !continuous {
+                // Play any final vowels from the previous note.
+
+                prev_vowel = Some(note.syllable.main_vowel);
+                for c in &note.syllable.final_vowels.clone() {
+                    let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, true);
+                    delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time, true, current_note_index);
+                    prev_vowel = Some(*c);
+                }
             }
 
             // Smoothly transition between the two notes.
@@ -367,14 +377,16 @@ impl Director {
 
         let mut has_updated_starts = false;
         let mut attack_time = if new_syllable.initial_consonants.len() == 0 {1000+(10000.0*(1.0-self.attack_rate)) as i64} else {0};
-        for c in &new_syllable.initial_vowels {
-            if !has_updated_starts && *c != 'l' && *c != 'm' && *c != 'n' {
-                update_starts(self, &mut delay, &mut has_updated_starts);
+        if !continuous {
+            for c in &new_syllable.initial_vowels {
+                if !has_updated_starts && *c != 'l' && *c != 'm' && *c != 'n' {
+                    update_starts(self, &mut delay, &mut has_updated_starts);
+                }
+                let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, false);
+                delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time.max(attack_time), false, note_index);
+                attack_time = 0;
+                prev_vowel = Some(*c);
             }
-            let (vowel_delay, vowel_transition_time) = self.get_vowel_timing(*c, false);
-            delay = self.add_transient_vowel(delay, prev_vowel, *c, vowel_delay, vowel_transition_time.max(attack_time), false, note_index);
-            attack_time = 0;
-            prev_vowel = Some(*c);
         }
         if !has_updated_starts {
             update_starts(self, &mut delay, &mut has_updated_starts);
@@ -673,8 +685,8 @@ impl Director {
                         Message::Reinitialize {voice_part, voice_count} => {
                             self.initialize_voices(voice_part, voice_count);
                         }
-                        Message::NoteOn {syllable, note_index, velocity} => {
-                            let _ = self.note_on(&syllable, note_index, velocity);
+                        Message::NoteOn {syllable, note_index, velocity, continue_syllable} => {
+                            let _ = self.note_on(&syllable, note_index, velocity, continue_syllable);
                         }
                         Message::NoteOff => {
                             self.note_off(false);

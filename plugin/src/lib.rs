@@ -261,7 +261,11 @@ impl Plugin for ChorusExMachina {
                             else {
                                 syllable_index = self.last_syllable_index as usize;
                             }
-                            let _ = sender.send(Message::NoteOn {syllable: syllables[syllable_index].to_string(), note_index: note as i32, velocity: velocity});
+                            let _ = sender.send(Message::NoteOn {
+                                syllable: syllables[syllable_index].to_string(),
+                                note_index: note as i32,
+                                velocity: velocity,
+                                continue_syllable: !self.params.advance_syllable.value()});
                             self.last_note = note;
 
                             // If we get both a NoteOn and a NoteOff and the same time, skip the NoteOff
