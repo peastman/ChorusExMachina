@@ -34,7 +34,7 @@ pub struct Syllable {
 }
 
 impl Syllable {
-    pub fn build(sampa: &str) -> Result<Syllable, &'static str> {
+    pub fn build(sampa: &str) -> Result<Syllable, String> {
         // First split the string into initial consonants, vowels, and final consonants.
 
         let sampa = sampa.replace("tS", "ʧ").replace("dZ", "ʤ").replace("r", "4r");
@@ -56,30 +56,30 @@ impl Syllable {
             }
             else if VOWELS.contains(c) {
                 if stage == 2 {
-                    return Err("Vowel after terminal consonant");
+                    return Err("Vowel after final consonant".to_string());
                 }
                 vowels.push(c);
                 stage = 1;
             }
             else if c == '-' {
                 if vowels.len() == 0 || stage == 2 {
-                    return Err("- must follow a vowel");
+                    return Err("- must follow a vowel".to_string());
                 }
                 if has_explicit_main {
-                    return Err("Only one sound can be marked as the main vowel")
+                    return Err("Only one sound can be marked as the main vowel".to_string())
                 }
                 explicit_main = vowels.len()-1;
                 has_explicit_main = true;
             }
             else {
-                return Err("Illegal character '{c}");
+                return Err(format!("Illegal character '{}'", c));
             }
         }
 
         // Identify the main vowel.
 
         if vowels.len() == 0 {
-            return Err("No vowel in syllable");
+            return Err("No vowel in syllable".to_string());
         }
         let mut main = if vowels.len() == 1 {0} else {1};
         if has_explicit_main {

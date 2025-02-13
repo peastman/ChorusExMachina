@@ -15,6 +15,7 @@
 
 use crate::{ChorusExMachinaParams, VoicePart};
 use chorus::director::Message;
+use chorus::syllable::Syllable;
 use nih_plug::prelude::*;
 use nih_plug_egui::{create_egui_editor, egui};
 use egui_extras::{Column, TableBuilder};
@@ -183,7 +184,18 @@ fn draw_text_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, sette
                     clicked = response.clicked();
                 }
                 else {
-                    clicked = ui.label(&phrases[row_index]).clicked();
+                    let width = ui.fonts(|f| f.glyph_width(&egui::TextStyle::Body.resolve(ui.style()), ' '));
+                    ui.spacing_mut().item_spacing.x = width;
+                    for s in phrases[row_index].split_whitespace() {
+                        match Syllable::build(s) {
+                            Ok(_) => {
+                                clicked |= ui.label(s).clicked();
+                            }
+                            Err(error) => {
+                                clicked |= ui.colored_label(egui::Color32::RED, s).on_hover_text(error).clicked();
+                            }
+                        }
+                    }
                 }
             });
             clicked |= row.response().clicked();

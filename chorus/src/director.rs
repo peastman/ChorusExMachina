@@ -255,7 +255,7 @@ impl Director {
     }
 
     /// Start singing a new note.
-    fn note_on(&mut self, syllable: &str, note_index: i32, velocity: f32, continue_syllable: bool) -> Result<(), &'static str> {
+    fn note_on(&mut self, syllable: &str, note_index: i32, velocity: f32, continue_syllable: bool) -> Result<(), String> {
         // If the note index is outside the range of this voice part, just stop the current
         // note and exit.
 
