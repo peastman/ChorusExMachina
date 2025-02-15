@@ -140,13 +140,14 @@ be shifted earlier.  How far it must be shifted depends on the number and type o
 possibly including final consonants from the previous note.  Adjusting note start times by hand is
 slow and imprecise.
 
-Instead you can tell it to delay the start of the first vowel by up to 200 ms.  This allows the
+Instead you can tell it to delay the start of the first vowel by up to 250 ms.  This allows the
 vowel to always follow the start of the note by exactly the same amount, regardless of what
-consonants precede it.  When singing legato, the end of the previous note is shifted by the same
-amount to avoid creating a break in the sound.  This gives precise timing with no extra effort.
-If you need to synchronize the chorus with other instruments, you can adjust the MIDI offset in
-your DAW to shift the start of the notes earlier by the same amount as the delay, so vowels begin
-exactly on the beat.
+consonants precede it.  The ends of notes are shifted by the same amount to avoid shortening
+notes or creating a break in the sound.  When singing legato, the first vowel of the new note
+begins on the beat.  When ending non-legato notes, the first final consonant begins on the beat.
+This gives precise timing with no extra effort.  If you need to synchronize the chorus with other
+instruments, you can adjust the MIDI offset in your DAW to shift the start of the notes earlier by
+the same amount as the delay, so vowels begin exactly on the beat.
 
 There are several parameters you can automate in a DAW to control the performance.
 

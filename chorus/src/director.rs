@@ -447,6 +447,7 @@ impl Director {
     /// ends the current note as well.
     fn note_off(&mut self, legato: bool) {
         let mut delay = 0;
+        let num_transitions = self.transitions.len();
         for transition in &self.transitions {
             delay = i64::max(delay, transition.end-self.step);
         }
@@ -463,6 +464,18 @@ impl Director {
                 delay = self.add_transient_vowel(delay, final_vowel, *c, vowel_delay, vowel_transition_time, true, note_index);
                 final_vowel = Some(*c);
             }
+        }
+
+        // Update the start times of any vowels we just added so the final consonants will be
+        // right on the beat.
+
+        if !legato && delay < self.min_vowel_start {
+            let offset = self.min_vowel_start-delay;
+            for i in num_transitions..self.transitions.len() {
+                self.transitions[i].start += offset;
+                self.transitions[i].end += offset;
+            }
+            delay = self.min_vowel_start;
         }
 
         // Determine how quickly to stop the sound.  This may get modified if the first final consonant
