@@ -321,13 +321,25 @@ impl Director {
                 }
             }
 
-            // Smoothly transition between the two notes.
+            // Smoothly transition between the two notes.  The time and envelope shape depend both on how
+            // large a jump we're making and on what vowel we're heading toward.
 
             let transition_time = (1000 + 150*(current_note_index-note_index).abs()) as i64;
             self.add_transition(delay, transition_time, TransitionData::FrequencyChange {start_frequency: self.frequency_after_transitions, end_frequency: frequency});
-            let min_envelope = f32::powf(0.85, (current_note_index-note_index).abs() as f32);
+            let min_envelope = self.envelope_after_transitions*f32::powf(0.85, (current_note_index-note_index).abs() as f32);
+            let first_vowel;
+            if !continuous && new_syllable.initial_vowels.len() > 0 {
+                first_vowel = new_syllable.initial_vowels[0];
+            }
+            else {
+                first_vowel = new_syllable.main_vowel;
+            }
+            let mut final_envelope = f32::min(1.0, self.phonemes.get_amplification(first_vowel));
+            if current_note_index > note_index {
+                final_envelope = 0.5*(final_envelope+min_envelope);
+            }
             self.add_transition(delay, transition_time/2, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: min_envelope});
-            self.add_transition(delay+transition_time/2, transition_time/2, TransitionData::EnvelopeChange {start_envelope: min_envelope, end_envelope: 1.0});
+            self.add_transition(delay+transition_time/2, transition_time/2, TransitionData::EnvelopeChange {start_envelope: min_envelope, end_envelope: final_envelope});
             delay += transition_time;
         }
         else {
