@@ -100,7 +100,7 @@ impl Glottis {
             // to determine alpha and epsilon.  That is slow.  The following approximations are
             // very fast and produce good results.
 
-            self.epsilon = 1.0/self.ta;
+            self.epsilon = 56.5*(-0.837*self.rd).exp();
             self.alpha = 8.08*(-1.07*self.rd).exp();
             self.e0 = 1.0/((self.alpha*self.te).exp()*(PI*self.te/self.tp).sin());
             self.shift = (-self.epsilon*(1.0-self.te)).exp();
