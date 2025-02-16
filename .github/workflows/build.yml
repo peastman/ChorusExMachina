@@ -68,6 +68,17 @@ jobs:
           mkdir plugins
           move target\bundled\chorus_ex_machina.vst3 plugins
           move target\bundled\chorus_ex_machina.clap plugins
+          copy .github\readmes\README-Windows.txt plugins\README.txt
+
+      - name: Add README to output (Linux)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          cp .github/readmes/README-Linux.txt plugins/README.txt
+
+      - name: Add README to output (Mac)
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          cp .github/readmes/README-Mac.txt plugins/README.txt
 
       - name: Build audio unit
         if: startsWith(matrix.os, 'macos')
