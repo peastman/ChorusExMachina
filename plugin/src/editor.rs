@@ -110,6 +110,7 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
     ui.label(egui::RichText::new("These controls can be mapped to MIDI CCs and automated in a DAW").italics());
     ui.add_space(5.0);
     egui::Grid::new("sliders").show(ui, |ui| {
+        ui.spacing_mut().slider_width = 200.0;
         draw_param_slider(ui, &params.dynamics, setter);
         draw_param_slider(ui, &params.vibrato, setter);
         draw_param_slider(ui, &params.intensity, setter);
