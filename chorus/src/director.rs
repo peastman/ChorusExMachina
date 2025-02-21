@@ -261,7 +261,7 @@ impl Director {
 
         if note_index < self.lowest_note || note_index > self.highest_note {
             if self.current_note.is_some() {
-                self.note_off(false);
+                self.note_off(false, false);
             }
             return Ok(());
         }
@@ -274,6 +274,7 @@ impl Director {
         let mut delay_for_consonants = false;
         let has_current_note = self.current_note.is_some();
         let mut continuous = false;
+        let mut sustain = new_syllable.initial_consonants.iter().all(|&c| self.phonemes.is_voiced_consonant(c));
         if let Some(note) = &self.current_note {
             if continue_syllable && note.syllable.main_vowel == new_syllable.main_vowel {
                 // Treat the previous and new notes as a single syllable, continuing on the same vowel.
@@ -293,7 +294,8 @@ impl Director {
                 if new_syllable.initial_consonants.len() == 1 && !self.phonemes.is_voiced_consonant(new_syllable.initial_consonants[0]) {
                     delay_for_consonants = true;
                 }
-                self.note_off(true);
+                sustain &= note.syllable.final_consonants.iter().all(|&c| self.phonemes.is_voiced_consonant(c));
+                self.note_off(true, sustain);
             }
         }
         let frequency = 440.0 * f32::powf(2.0, (note_index-69) as f32/12.0);
@@ -445,7 +447,7 @@ impl Director {
 
     /// End the current note.  Because this is a monophonic instrument, note_on() automatically
     /// ends the current note as well.
-    fn note_off(&mut self, legato: bool) {
+    fn note_off(&mut self, legato: bool, sustain: bool) {
         let mut delay = 0;
         let num_transitions = self.transitions.len();
         for transition in &self.transitions {
@@ -510,7 +512,8 @@ impl Director {
 
         // Smoothly stop the sound.
 
-        self.add_transition(stop_envelope_time, off_time, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: 0.0});
+        let end_envelope = if sustain {0.1} else {0.0};
+        self.add_transition(stop_envelope_time, off_time, TransitionData::EnvelopeChange {start_envelope: self.envelope_after_transitions, end_envelope: end_envelope});
         self.current_note = None;
     }
 
@@ -714,7 +717,7 @@ impl Director {
                             let _ = self.note_on(&syllable, note_index, velocity, continue_syllable);
                         }
                         Message::NoteOff => {
-                            self.note_off(false);
+                            self.note_off(false, false);
                         }
                         Message::SetVolume {volume} => {
                             self.volume = volume;
