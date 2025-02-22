@@ -135,7 +135,7 @@ impl Default for ChorusExMachinaParams {
             consonant_volume: FloatParam::new("Consonant Volume", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
             attack_rate: FloatParam::new("Attack Rate", 0.8, FloatRange::Linear {min: 0.0, max: 1.0}),
             release_rate: FloatParam::new("Release Rate", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
-            stereo_width: FloatParam::new("Stereo Width", 0.3, FloatRange::Linear {min: 0.0, max: 1.0}),
+            stereo_width: FloatParam::new("Stereo Width", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
             vowel_delay: IntParam::new("Vowel Delay", 0, IntRange::Linear {min: 0, max: 250}),
             accent: BoolParam::new("Accent", false),
             selected_phrase: IntParam::new("Selected Phrase", 0, IntRange::Linear {min: 0, max: 127}),
