@@ -188,8 +188,8 @@ impl Phonemes {
         };
         result.add_consonant('b', 100, 2700, 300, 1500, 0.004, 46, 700.0, 4300.0, false, false, 'p', 1.0, true, false);
         result.add_consonant('b', 100, 2700, 300, 1500, 0.005, 46, 700.0, 4300.0, false, false, 'p', 0.8, true, true);
-        result.add_consonant('d', 0, 1500, 300, 1000, 0.007, 45, 700.0, 3500.0, false, false, 't', 0.1, true, false);
-        result.add_consonant('d', 0, 1500, 300, 1000, 0.004, 45, 700.0, 3500.0, false, false, 't', 0.4, true, true);
+        result.add_consonant('d', 0, 200, 300, 1000, 0.007, 45, 700.0, 4800.0, false, false, 't', 0.1, true, false);
+        result.add_consonant('d', 0, 1500, 300, 1000, 0.004, 45, 700.0, 4800.0, false, false, 't', 0.4, true, true);
         result.add_consonant('f', 1000, 2000, 2000, 2000, 0.009, 46, 2500.0, 5000.0, true, false, ' ', 1.0, true, false);
         result.add_consonant('f', 2500, 1500, 2000, 2000, 0.008, 46, 2500.0, 5000.0, true, false, ' ', 1.0, true, true);
         result.add_consonant('g', 600, 2700, 200, 750, 0.008, 32, 1025.0, 5200.0, false, false, 'k', 0.25, true, false);
