@@ -217,7 +217,7 @@ impl Director {
                 self.lowest_note = 57;
                 self.highest_note = 88;
                 self.high_blend_note = 72;
-                self.high_blend_fraction = 0.2;
+                self.high_blend_fraction = 0.3;
             }
             VoicePart::Alto => {
                 vocal_length = 45;
@@ -907,6 +907,9 @@ impl Director {
         }
         if vowel == 'N' {
             return (1000, 1500);
+        }
+        if vowel == 'l' && !is_final {
+            return (0, 2000);
         }
         if vowel == '3' {
             if is_final {
