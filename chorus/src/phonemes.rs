@@ -26,7 +26,8 @@ pub struct Phonemes {
     consonant_map: HashMap<char, Consonant>,
     final_consonant_map: HashMap<char, Consonant>,
     voiced_consonants: HashSet<char>,
-    amplification: HashMap<char, f32>
+    amplification: HashMap<char, f32>,
+    g_position: HashMap<char, usize>
 }
 
 impl Phonemes {
@@ -177,6 +178,19 @@ impl Phonemes {
         amplification.insert('6', 1.3);
         amplification.insert('9', 1.3);
         amplification.insert('&', 1.3);
+        let mut g_position = HashMap::new();
+        let ratio = match voice_part {
+            VoicePart::Soprano => 51.0/42.0,
+            VoicePart::Alto => 51.0/45.0,
+            VoicePart::Tenor => 51.0/48.0,
+            VoicePart::Bass => 1.0
+        };
+        for (c, pos) in [('&', 36), ('2', 36), ('3', 33), ('9', 36), ('@', 27), ('A', 25),
+                         ('E', 32), ('I', 36), ('N', 32), ('O', 31), ('U', 31), ('V', 31),
+                         ('Y', 37), ('a', 26), ('e', 37), ('i', 33), ('o', 32), ('u', 34),
+                         ('y', 33), ('{', 32)] {
+            g_position.insert(c, (pos as f32/ratio).round() as usize);
+        }
         let mut result = Self {
             voice_part: voice_part,
             shape_map: shape_map,
@@ -184,16 +198,17 @@ impl Phonemes {
             consonant_map: HashMap::new(),
             final_consonant_map: HashMap::new(),
             voiced_consonants: HashSet::new(),
-            amplification: amplification
+            amplification: amplification,
+            g_position: g_position
         };
-        result.add_consonant('b', 100, 2700, 300, 1500, 0.004, 46, 700.0, 4300.0, false, false, 'p', 1.0, true, false);
-        result.add_consonant('b', 100, 2700, 300, 1500, 0.005, 46, 700.0, 4300.0, false, false, 'p', 0.8, true, true);
+        result.add_consonant('b', 100, 2700, 300, 1500, 0.004, 46, 700.0, 4300.0, false, true, 'p', 1.0, true, false);
+        result.add_consonant('b', 100, 2700, 300, 1500, 0.005, 46, 700.0, 4300.0, false, true, 'p', 0.8, true, true);
         result.add_consonant('d', 0, 200, 300, 1000, 0.007, 45, 700.0, 4800.0, false, false, 't', 0.1, true, false);
         result.add_consonant('d', 0, 1500, 300, 1000, 0.004, 45, 700.0, 4800.0, false, false, 't', 0.4, true, true);
         result.add_consonant('f', 1000, 2000, 2000, 2000, 0.009, 46, 2500.0, 5000.0, true, false, ' ', 1.0, true, false);
         result.add_consonant('f', 2500, 1500, 2000, 2000, 0.008, 46, 2500.0, 5000.0, true, false, ' ', 1.0, true, true);
-        result.add_consonant('g', 600, 2700, 200, 750, 0.008, 32, 1025.0, 5200.0, false, false, 'k', 0.25, true, false);
-        result.add_consonant('g', 600, 2700, 200, 750, 0.005, 32, 1025.0, 5200.0, false, false, 'k', 0.8, true, true);
+        result.add_consonant('g', 600, 2700, 200, 750, 0.008, 32, 1025.0, 5200.0, false, true, 'k', 0.25, true, false);
+        result.add_consonant('g', 600, 2700, 200, 750, 0.009, 32, 1025.0, 5200.0, false, true, 'k', 0.5, true, true);
         result.add_consonant('h', 1500, 1000, 2000, 4000, 0.003, 11, 1000.0, 5000.0, false, false, ' ', 1.0, false, false);
         result.add_consonant('j', 0, 3000, 0, 0, 0.0, 1, 4150.0, 6500.0, false, true, 'i', 0.25, false, false);
         result.add_consonant('k', 500, 1500, 900, 1100, 0.010, 35, 4200.0, 4000.0, false, false, 'k', 0.8, true, false);
@@ -223,8 +238,10 @@ impl Phonemes {
         result.add_consonant('Z', 100, 3000, 4000, 2000, 0.008, 47, 3000.0, 700.0, true, true, 'S', 0.2, false, true);
         result.add_consonant('4', 100, 4000, 700, 900, 0.01, 43, 1170.0, 4000.0, false, true, '3', 0.0, false, false);
         result.add_consonant('4', 100, 4000, 700, 900, 0.006, 43, 1170.0, 4000.0, false, true, '3', 0.0, false, true);
-        result.add_consonant('ʤ', 300, 800, 2100, 2300, 0.01, 45, 2000.0, 3000.0, true, false, 'S', 0.1, false, false);
-        result.add_consonant('ʧ', 3000, 800, 2100, 2300, 0.009, 45, 2000.0, 3000.0, true, false, 'S', 0.1, false, false);
+        result.add_consonant('ʤ', 200, 2200, 1200, 1700, 0.01, 45, 2000.0, 3000.0, true, true, 'S', 0.1, false, false);
+        result.add_consonant('ʤ', 3000, 2700, 1200, 1700, 0.01, 45, 2000.0, 3000.0, true, false, 'S', 0.1, false, true);
+        result.add_consonant('ʧ', 200, 2700, 2100, 2300, 0.009, 45, 2000.0, 3000.0, true, false, 'S', 0.1, false, false);
+        result.add_consonant('ʧ', 3000, 2700, 2100, 2300, 0.009, 45, 2000.0, 3000.0, true, false, 'S', 0.1, false, true);
         result
     }
 
@@ -289,7 +306,7 @@ impl Phonemes {
     }
 
     /// Get a description of how to synthesize a consonant.
-    pub fn get_consonant(&self, consonant: char, is_final: bool, time_scale: f32) -> Option<Consonant> {
+    pub fn get_consonant(&self, consonant: char, adjacent_vowel: Option<char>, is_final: bool, time_scale: f32) -> Option<Consonant> {
         let mut result = None;
         if is_final {
             if let Some(c) = self.final_consonant_map.get(&consonant) {
@@ -306,6 +323,16 @@ impl Phonemes {
             c.transition_time = (time_scale*c.transition_time as f32) as i64;
             c.on_time = (time_scale*c.on_time as f32) as i64;
             c.off_time = (time_scale*c.off_time as f32) as i64;
+
+            // The position of a final g depends on what vowel it follows.
+
+            if consonant == 'g' && is_final {
+                if let Some(vowel) = adjacent_vowel {
+                    if let Some(pos) = self.g_position.get(&vowel) {
+                        c.position = *pos;
+                    }
+                }
+            }
             result = Some(c);
         }
         result

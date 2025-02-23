@@ -135,9 +135,9 @@ impl App for MainGui {
                     if controller.phrase.len() > 0 {
                         let phonemes = Phonemes::new(self.voice_part);
                         let cons = controller.phrase.chars().next().unwrap();
-                        if let Some(c) = phonemes.get_consonant(cons, false, 1.0) {
+                        if let Some(c) = phonemes.get_consonant(cons, None, false, 1.0) {
                             self.consonant_delay = c.delay;
-                            self.vowel_transition_time = c.transition_time;
+                            self.consonant_transition_time = c.transition_time;
                             self.consonant_on_time = c.on_time;
                             self.consonant_off_time = c.off_time;
                             self.consonant_volume2 = c.volume;
