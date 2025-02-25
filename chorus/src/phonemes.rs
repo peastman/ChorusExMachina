@@ -240,6 +240,8 @@ impl Phonemes {
         result.add_consonant('4', 100, 4000, 700, 900, 0.006, 43, 1170.0, 4000.0, false, true, '3', 0.0, false, true);
         result.add_consonant('ʤ', 200, 2200, 1200, 1700, 0.01, 45, 2000.0, 3000.0, true, true, 'S', 0.1, false, false);
         result.add_consonant('ʤ', 3000, 2700, 1200, 1700, 0.01, 45, 2000.0, 3000.0, true, false, 'S', 0.1, false, true);
+        result.add_consonant('ʦ', 0, 0, 1600, 2000, 0.01, 47, 5000.0, 900.0, true, false, 't', 0.0, false, false);
+        result.add_consonant('ʦ', 3000, 2700, 1600, 2400, 0.01, 47, 5000.0, 900.0, true, false, 't', 0.5, false, true);
         result.add_consonant('ʧ', 200, 2700, 2100, 2300, 0.009, 45, 2000.0, 3000.0, true, false, 'S', 0.1, false, false);
         result.add_consonant('ʧ', 3000, 2700, 2100, 2300, 0.009, 45, 2000.0, 3000.0, true, false, 'S', 0.1, false, true);
         result

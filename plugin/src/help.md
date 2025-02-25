@@ -75,6 +75,7 @@ The following consonants are supported.
 | z | **z**oo | |
 | 4 | ca**r**o (Spanish) | See note on the letter R below |
 | dZ | **j**eans | |
+| ts | **Z**eit (German) | |
 | tS | **ch**eap | |
 
 **Note on the letter R**
