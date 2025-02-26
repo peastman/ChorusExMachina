@@ -162,7 +162,7 @@ impl Phonemes {
         nasal_vowels.insert('n');
         nasal_vowels.insert('N');
         let mut amplification = HashMap::new();
-        amplification.insert('a', 1.2);
+        amplification.insert('a', 1.0);
         amplification.insert('e', 1.3);
         amplification.insert('i', 1.5);
         amplification.insert('o', 1.5);
@@ -203,8 +203,8 @@ impl Phonemes {
         };
         result.add_consonant('b', 100, 2700, 300, 1500, 0.004, 46, 700.0, 4300.0, false, true, 'p', 1.0, true, false);
         result.add_consonant('b', 100, 2700, 300, 1500, 0.005, 46, 700.0, 4300.0, false, true, 'p', 0.8, true, true);
-        result.add_consonant('d', 1500, 4500, 1500, 1900, 0.004, 45, 1200.0, 3000.0, false, true, 't', 0.1, true, false);
-        result.add_consonant('d', 0, 1500, 900, 1500, 0.004, 45, 700.0, 4800.0, false, false, 't', 0.4, true, true);
+        result.add_consonant('d', 1500, 4500, 1500, 1900, 0.004, 40, 1200.0, 3000.0, false, true, 't', 0.1, true, false);
+        result.add_consonant('d', 0, 1500, 900, 1500, 0.004, 40, 700.0, 4800.0, false, false, 't', 0.4, true, true);
         result.add_consonant('f', 1000, 2000, 2000, 2000, 0.009, 46, 2500.0, 5000.0, true, false, ' ', 1.0, true, false);
         result.add_consonant('f', 2500, 1500, 2000, 2000, 0.008, 46, 2500.0, 5000.0, true, false, ' ', 1.0, true, true);
         result.add_consonant('g', 600, 2700, 200, 750, 0.008, 32, 1025.0, 5200.0, false, true, 'k', 0.25, true, false);
@@ -222,8 +222,8 @@ impl Phonemes {
         result.add_consonant('v', 700, 4000, 2000, 2000, 0.011, 46, 1400.0, 5000.0, true, true, ' ', 1.0, true, false);
         result.add_consonant('v', 700, 1500, 2000, 2000, 0.007, 46, 1400.0, 5000.0, true, true, ' ', 1.0, true, false);
         result.add_consonant('w', 0, 3500, 0, 0, 0.0, 48, 4150.0, 6500.0, false, true, 'u', 1.0, true, false);
-        result.add_consonant('x', 3000, 1000, 2000, 4000, 0.005, 15, 500.0, 4000.0, false, false, ' ', 1.0, false, false);
-        result.add_consonant('x', 0, 1000, 2000, 4000, 0.005, 15, 500.0, 4000.0, false, false, ' ', 1.0, false, true);
+        result.add_consonant('x', 3000, 1000, 2000, 4000, 0.004, 18, 500.0, 3000.0, false, false, ' ', 1.0, false, false);
+        result.add_consonant('x', 0, 1000, 2000, 4000, 0.004, 18, 500.0, 3000.0, false, false, ' ', 1.0, false, true);
         result.add_consonant('z', 100, 3000, 4000, 2000, 0.017, 47, 5000.0, 500.0, true, true, 'S', 1.0, true, false);
         result.add_consonant('z', 100, 3000, 4000, 2000, 0.01, 47, 5000.0, 400.0, true, true, 'S', 0.9, true, true);
         result.add_consonant('C', 3000, 3000, 4000, 3000, 0.004, 44, 3000.0, 900.0, true, false, 'S', 0.2, true, false);
