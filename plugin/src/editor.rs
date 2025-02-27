@@ -81,7 +81,7 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
     ui.add_space(5.0);
     ui.horizontal(|ui| {
         ui.label("Voice Part");
-        egui::ComboBox::from_id_source("Voice Part").selected_text(format!("{:?}", new_voice_part)).show_ui(ui, |ui| {
+        egui::ComboBox::from_id_salt("Voice Part").selected_text(format!("{:?}", new_voice_part)).show_ui(ui, |ui| {
             ui.selectable_value(&mut new_voice_part, VoicePart::Soprano, "Soprano");
             ui.selectable_value(&mut new_voice_part, VoicePart::Alto, "Alto");
             ui.selectable_value(&mut new_voice_part, VoicePart::Tenor, "Tenor");
@@ -214,7 +214,7 @@ fn draw_help_panel(ui: &mut egui::Ui) {
     let mut cache = CommonMarkCache::default();
     let text = include_str!("help.md");
     egui::ScrollArea::vertical().show(ui, |ui| {
-        CommonMarkViewer::new("help").show(ui, &mut cache, text);
+        CommonMarkViewer::new().show(ui, &mut cache, text);
     });
 }
 

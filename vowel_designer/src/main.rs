@@ -410,10 +410,10 @@ impl App for MainGui {
             });
             let painter = ui.painter();
             let bounds = ui.available_rect_before_wrap();
-            let black_stroke = epaint::PathStroke::new(1.0, egui::Color32::BLACK);
-            let gray_stroke = epaint::PathStroke::new(1.0, egui::Color32::GRAY);
-            painter.hline(egui::Rangef::new(bounds.min.x, bounds.max.x), bounds.max.y, black_stroke.clone());
-            painter.hline(egui::Rangef::new(bounds.min.x, bounds.max.x), (bounds.min.y+bounds.max.y)/2.0, gray_stroke.clone());
+            let black_stroke = epaint::Stroke::new(1.0, egui::Color32::BLACK);
+            let gray_stroke = epaint::Stroke::new(1.0, egui::Color32::GRAY);
+            painter.hline(egui::Rangef::new(bounds.min.x, bounds.max.x), bounds.max.y, black_stroke);
+            painter.hline(egui::Rangef::new(bounds.min.x, bounds.max.x), (bounds.min.y+bounds.max.y)/2.0, gray_stroke);
 
             // Draw the handles.
 
@@ -446,8 +446,8 @@ impl App for MainGui {
                 points1.push(egui::Pos2::new(x, y1));
                 points2.push(egui::Pos2::new(x, y2));
             }
-            painter.line(points1, gray_stroke.clone());
-            painter.line(points2, black_stroke.clone());
+            painter.line(points1, gray_stroke);
+            painter.line(points2, black_stroke);
 
             if shape_changed {
                 player.update_shape();

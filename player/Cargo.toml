@@ -7,5 +7,5 @@ edition = "2021"
 chorus = { path = "../chorus" }
 rodio = "0.20.1"
 midir = "0.10.1"
-egui = "0.30.0"
-eframe = "0.30.0"
+egui = "0.31.0"
+eframe = "0.31.0"
