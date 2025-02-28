@@ -568,12 +568,19 @@ impl Director {
         }
         self.consonants.push(consonant);
         if let Some(vowel) = adjacent_vowel {
-            let start_shape = self.phonemes.get_consonant_shape(&consonant, vowel).unwrap().clone();
-            let end_shape = (if is_final {&start_shape} else {self.phonemes.get_vowel_shape(vowel).unwrap()}).clone();
             let nasal_coupling = self.phonemes.get_nasal_coupling(vowel);
-            self.add_shape_transition(delay, 1000, start_shape, 0.0, note_index);
-            self.add_shape_transition(delay+1000, consonant.transition_time, end_shape, nasal_coupling, note_index);
-            delay_to_vowel += consonant.transition_time+1000;
+            if is_final {
+                let end_shape = self.phonemes.get_consonant_shape(&consonant, vowel).unwrap().clone();
+                self.add_shape_transition(delay, consonant.transition_time, end_shape, nasal_coupling, note_index);
+                delay_to_vowel += consonant.transition_time;
+            }
+            else {
+                let start_shape = self.phonemes.get_consonant_shape(&consonant, vowel).unwrap().clone();
+                let end_shape = self.phonemes.get_vowel_shape(vowel).unwrap().clone();
+                self.add_shape_transition(delay, 1000, start_shape, 0.0, note_index);
+                self.add_shape_transition(delay+1000, consonant.transition_time, end_shape, nasal_coupling, note_index);
+                delay_to_vowel += consonant.transition_time+1000;
+            }
             if consonant.voiced {
                 envelope_offset = consonant.transition_time;
             }

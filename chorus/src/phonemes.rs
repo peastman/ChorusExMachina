@@ -185,6 +185,7 @@ impl Phonemes {
             VoicePart::Tenor => 51.0/48.0,
             VoicePart::Bass => 1.0
         };
+        // The position of a final g needs to depend on the adjacent vowel.
         for (c, pos) in [('&', 36), ('2', 36), ('3', 33), ('9', 36), ('@', 27), ('A', 25),
                          ('E', 32), ('I', 36), ('N', 32), ('O', 31), ('U', 31), ('V', 31),
                          ('Y', 37), ('a', 26), ('e', 37), ('i', 33), ('o', 32), ('u', 34),
@@ -201,24 +202,31 @@ impl Phonemes {
             amplification: amplification,
             g_position: g_position
         };
+        // Scaling doesn't give good results for all voice parts for d.
+        let dpos = match voice_part {
+            VoicePart::Soprano => 45,
+            VoicePart::Alto => 44,
+            VoicePart::Tenor => 43,
+            VoicePart::Bass => 42
+        };
         result.add_consonant('b', 100, 2700, 300, 1500, 0.004, 46, 700.0, 4300.0, false, true, 'p', 1.0, true, false);
         result.add_consonant('b', 100, 2700, 300, 1500, 0.005, 46, 700.0, 4300.0, false, true, 'p', 0.8, true, true);
-        result.add_consonant('d', 1500, 4500, 1500, 1900, 0.004, 40, 1200.0, 3000.0, false, true, 't', 0.1, true, false);
-        result.add_consonant('d', 0, 1500, 900, 1500, 0.004, 40, 700.0, 4800.0, false, false, 't', 0.4, true, true);
+        result.add_consonant('d', 1500, 4500, 1500, 1900, 0.006, dpos, 1200.0, 3000.0, false, true, 't', 0.1, true, false);
+        result.add_consonant('d', 0, 3000, 900, 1500, 0.006, dpos, 1200.0, 3000.0, false, false, 't', 0.4, true, true);
         result.add_consonant('f', 1000, 2000, 2000, 2000, 0.009, 46, 2500.0, 5000.0, true, false, ' ', 1.0, true, false);
         result.add_consonant('f', 2500, 1500, 2000, 2000, 0.008, 46, 2500.0, 5000.0, true, false, ' ', 1.0, true, true);
-        result.add_consonant('g', 600, 2700, 200, 750, 0.008, 32, 1025.0, 5200.0, false, true, 'k', 0.25, true, false);
-        result.add_consonant('g', 600, 2700, 200, 750, 0.009, 32, 1025.0, 5200.0, false, true, 'k', 0.5, true, true);
+        result.add_consonant('g', 600, 2700, 200, 750, 0.005, 44, 1025.0, 5200.0, false, true, 'k', 0.25, true, false);
+        result.add_consonant('g', 600, 2700, 200, 750, 0.015, 44, 1025.0, 5200.0, false, true, 'k', 0.5, true, true);
         result.add_consonant('h', 1500, 1000, 2000, 4000, 0.003, 11, 1000.0, 5000.0, false, false, ' ', 1.0, false, false);
         result.add_consonant('j', 0, 3000, 0, 0, 0.0, 1, 4150.0, 6500.0, false, true, 'i', 0.25, false, false);
         result.add_consonant('k', 500, 1500, 900, 1100, 0.010, 35, 4200.0, 4000.0, false, false, 'k', 0.8, true, false);
-        result.add_consonant('k', 500, 1500, 900, 1100, 0.0075, 35, 4200.0, 4000.0, false, false, 'k', 0.8, true, true);
+        result.add_consonant('k', 500, 1500, 900, 1100, 0.015, 35, 4200.0, 4000.0, false, false, 'k', 0.8, true, true);
         result.add_consonant('p', 1200, 500, 300, 1500, 0.007, 48, 700.0, 4300.0, false, false, 'p', 0.85, true, false);
         result.add_consonant('r', 100, 4000, 700, 900, 0.004, 43, 1170.0, 4000.0, false, true, '3', 0.2, true, false);
         result.add_consonant('s', 2000, 2000, 3500, 2000, 0.015, 47, 5000.0, 900.0, true, false, ' ', 1.0, true, false);
         result.add_consonant('s', 3000, 3000, 3500, 1700, 0.012, 47, 5000.0, 900.0, true, false, ' ', 1.0, true, true);
         result.add_consonant('t', 300, 1500, 850, 1500, 0.012, 42, 2000.0, 6000.0, false, false, 't', 0.75, true, false);
-        result.add_consonant('t', 300, 1500, 850, 1500, 0.009, 42, 2000.0, 6000.0, false, false, 't', 1.0, true, true);
+        result.add_consonant('t', 300, 2500, 850, 1500, 0.01, 42, 2000.0, 4000.0, false, false, 't', 1.0, true, true);
         result.add_consonant('v', 700, 4000, 2000, 2000, 0.011, 46, 1400.0, 5000.0, true, true, ' ', 1.0, true, false);
         result.add_consonant('v', 700, 1500, 2000, 2000, 0.007, 46, 1400.0, 5000.0, true, true, ' ', 1.0, true, false);
         result.add_consonant('w', 0, 3500, 0, 0, 0.0, 48, 4150.0, 6500.0, false, true, 'u', 1.0, true, false);
