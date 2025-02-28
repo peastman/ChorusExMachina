@@ -108,6 +108,10 @@ part, the surrounding words, and the style of music.  Consider the English word 
 pronounced in many subtly different ways: `Ai`, `Ae`, `AI`, `aI`, etc.  If a note sounds harsh
 or unnatural, experiment with different vowels to find the combination that sounds best.
 
+This is especially important for high soprano notes, which can sound unpleasantly bright when sung
+on closed vowels.  A singer will often change to a more open vowel for these notes, such as
+changing `i` to `e` or `I` to `E`.
+
 **Placing consonants and transient vowels**
 
 Consonants can appear both at the beginning and the end of a syllable.  Many consonants sound slightly
