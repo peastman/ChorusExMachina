@@ -221,28 +221,28 @@ impl Voice {
                 coupling_position = 22;
                 vibrato_frequency = 6.0;
                 formant_frequency = 3200.0;
-                nasal_shape = vec![1.52, 1.71, 2.08, 2.78, 3.53, 4.28, 4.33, 2.89, 2.49, 2.42, 2.13, 1.95, 1.83, 1.74, 1.41, 0.878, 0.769, 1.15, 1.12, 1.09, 1.06, 0.672];
+                nasal_shape = vec![1.52, 1.71, 2.08, 2.78, 3.53, 4.28, 4.33, 2.89, 2.49, 2.43, 2.16, 2.11, 2.34, 2.73, 2.7, 2.01, 1.41, 1.38, 1.18, 1.1, 1.07, 0.672];
             }
             VoicePart::Alto => {
                 vocal_length = 45;
                 coupling_position = 23;
                 vibrato_frequency = 5.3;
                 formant_frequency = 3000.0;
-                nasal_shape = vec![1.52, 1.7, 2.04, 2.68, 3.38, 4.18, 4.4, 3.4, 2.45, 2.46, 2.28, 2.0, 1.88, 1.8, 1.65, 1.24, 0.735, 0.873, 1.17, 1.09, 1.1, 1.03, 0.667];
+                nasal_shape = vec![1.52, 1.7, 2.04, 2.68, 3.38, 4.18, 4.4, 3.4, 2.45, 2.47, 2.3, 2.08, 2.18, 2.51, 2.8, 2.55, 1.72, 1.39, 1.36, 1.13, 1.11, 1.04, 0.668];
             }
             VoicePart::Tenor => {
                 vocal_length = 48;
                 coupling_position = 24;
                 vibrato_frequency = 5.3;
                 formant_frequency = 2800.0;
-                nasal_shape = vec![1.52, 1.7, 2.04, 2.68, 3.38, 4.18, 4.4, 3.4, 2.45, 2.46, 2.28, 2.0, 1.88, 1.8, 1.65, 1.24, 0.735, 0.873, 1.17, 1.09, 1.1, 1.03, 0.667];
+                nasal_shape = vec![1.52, 1.7, 2.04, 2.68, 3.38, 4.18, 4.4, 3.4, 2.45, 2.47, 2.3, 2.08, 2.18, 2.51, 2.8, 2.55, 1.72, 1.39, 1.36, 1.13, 1.11, 1.04, 0.668];
             }
             VoicePart::Bass => {
                 vocal_length = 51;
                 coupling_position = 25;
                 vibrato_frequency = 5.2;
                 formant_frequency = 2600.0;
-                nasal_shape = vec![1.52, 1.69, 1.99, 2.59, 3.3, 4.02, 4.44, 3.77, 2.57, 2.49, 2.38, 2.09, 1.94, 1.83, 1.76, 1.52, 1.05, 0.699, 0.972, 1.18, 1.07, 1.12, 1.01, 0.663];
+                nasal_shape = vec![1.52, 1.69, 1.99, 2.59, 3.3, 4.02, 4.44, 3.77, 2.57, 2.49, 2.39, 2.13, 2.1, 2.3, 2.65, 2.78, 2.28, 1.57, 1.38, 1.32, 1.11, 1.12, 1.01, 0.663];
             }
         }
         let mut voice = Voice {
@@ -346,7 +346,7 @@ impl Voice {
             if step < self.nasal_off_after_step {
                 // Propagate waves in the nasal cavity.
 
-                let damping = 0.99;
+                let damping = 0.98;
                 let nasal_right = self.nasal.right.clone();
                 let nasal_left = self.nasal.left.clone();
                 let nasal_right_output = &mut self.nasal.right;
