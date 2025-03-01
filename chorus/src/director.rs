@@ -902,18 +902,18 @@ impl Director {
     fn get_vowel_timing(&self, vowel: char, is_final: bool) -> (i64, i64) {
         if vowel == 'm' {
             if is_final {
-                return (500, 1500);
+                return (500, 3200);
             }
-            return (1000, 1500);
+            return (1000, 3200);
         }
         if vowel == 'n' {
             if is_final {
-                return (500, 1500);
+                return (500, 3200);
             }
-            return (1000, 2500);
+            return (1000, self.vowel_transition_time);
         }
         if vowel == 'N' {
-            return (1000, 1500);
+            return (1000, 2000);
         }
         if vowel == 'l' && !is_final {
             return (0, 2000);
