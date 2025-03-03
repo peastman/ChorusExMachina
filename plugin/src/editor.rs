@@ -208,6 +208,15 @@ fn draw_text_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, sette
             }
         });
     });
+    if ui.input(|i| i.key_pressed(egui::Key::Tab)) {
+        let selected_phrase = params.selected_phrase.value();
+        if state.edit_phrase < 127 {
+            state.edit_phrase += 1;
+            setter.begin_set_parameter(&params.selected_phrase);
+            setter.set_parameter(&params.selected_phrase, state.edit_phrase as i32);
+            setter.end_set_parameter(&params.selected_phrase);
+        }
+    }
 }
 
 fn draw_help_panel(ui: &mut egui::Ui) {
