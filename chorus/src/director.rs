@@ -871,7 +871,7 @@ impl Director {
     /// being played.
     fn update_sound(&mut self) {
         let noise = 0.05*(1.0-self.volume)*(1.0-self.volume);
-        let tremolo = 0.4*self.intensity;
+        let tremolo = 0.2*self.intensity;
         for voice in &mut self.voices {
             voice.set_noise(noise);
             voice.set_tremolo_amplitude(tremolo);
