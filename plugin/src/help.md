@@ -101,6 +101,7 @@ There are many vowels that sound very similar to each other.  Some examples are
 
 - `A` and `a`
 - `i` and `y`
+- `U` and `u`
 - `@`, `V`, and `9`
 
 Which one sounds best depends not only on the word being sung but also on the pitch, the voice

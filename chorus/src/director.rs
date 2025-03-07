@@ -357,7 +357,7 @@ impl Director {
             };
             for i in 0..new_syllable.initial_consonants.len() {
                 let mut time_scale = if has_current_note {0.8} else {1.0};
-                if i < new_syllable.initial_consonants.len()-1 {
+                if new_syllable.initial_consonants.len() > 1 {
                     time_scale *= 0.8;
                 }
                 let (delay_to_consonant, delay_to_vowel, offset) = self.add_consonant(delay, new_syllable.initial_consonants[i], Some(adjacent_vowel), false, note_index, time_scale);
@@ -506,12 +506,12 @@ impl Director {
             else {
                 off_time = off_time.min(first_consonant.transition_time);
             }
-            for i in 0..consonants.len() {
+            for c in &consonants {
                 let mut time_scale = if legato {0.8} else {1.0};
-                if i < consonants.len()-1 {
+                if consonants.len() > 1 {
                     time_scale *= 0.8;
                 }
-                let (delay_to_consonant, _delay_to_vowel, _envelope_offset) = self.add_consonant(delay, consonants[i], final_vowel, true, note_index, time_scale);
+                let (delay_to_consonant, _delay_to_vowel, _envelope_offset) = self.add_consonant(delay, *c, final_vowel, true, note_index, time_scale);
                 delay += delay_to_consonant;
             }
         }
