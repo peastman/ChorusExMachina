@@ -160,8 +160,7 @@ There are several parameters you can automate in a DAW to control the performanc
 - **Selected Phrase**.  The index of the phrase to sing.
 - **Dynamics**.  How loud to sing.  This is not simply a volume control.  Voices sound different
   depending on how loudly they are singing.
-- **Vibrato**.  The amount of vibrato in the voices.  For choruses, it is best to stick to values
-  near the middle of the range.  Solo voices can use more extreme values to add expression.
+- **Vibrato**.  The amount of vibrato in the voices.
 - **Intensity**.  How relaxed or intense the voices sound.
 - **Brightness**.  The overall vowel color.  Reduce this to get a darker sound.
 - **Consonant Volume**.  How loud consonants are relative to vowels.  This can be automated for

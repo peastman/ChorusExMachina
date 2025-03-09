@@ -123,7 +123,9 @@ impl Glottis {
         let vibrato_amplitude = self.vibrato_amplitude * (1.0+self.vibrato_amplitude_drift_amplitude*self.vibrato_amplitude_drift);
         let vibrato_offset = vibrato_freq / SAMPLE_RATE as f32;
         self.vibrato_phase = (self.vibrato_phase+vibrato_offset) % 4.0;
-        let freq = self.frequency * (1.0+self.frequency_drift_amplitude*self.frequency_drift) * (1.0+vibrato_amplitude*((2.0*PI*self.vibrato_phase).sin()));
+        let vibrato = (2.0*PI*self.vibrato_phase).sin();
+        let vibrato = vibrato*vibrato*vibrato;
+        let freq = self.frequency * (1.0+self.frequency_drift_amplitude*self.frequency_drift) * (1.0+vibrato_amplitude*vibrato);
         let offset = freq / SAMPLE_RATE as f32;
         self.phase = (self.phase+offset) % 1.0;
         let t = self.phase;
