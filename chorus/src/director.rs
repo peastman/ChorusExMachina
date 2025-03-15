@@ -298,7 +298,7 @@ impl Director {
         }
         if delay_for_consonants {
             for consonant in &self.consonants {
-                delay = i64::max(delay, consonant.start+consonant.on_time+consonant.off_time+self.max_voice_delay-self.step);
+                delay = i64::max(delay, consonant.start+consonant.on_time+consonant.off_time-self.step);
             }
         }
         let mut prev_vowel = None;
@@ -671,7 +671,7 @@ impl Director {
                     let consonant = &mut self.consonants[0];
 
                     // Mono consonants are only sung by one voice (the one panned to the center).
-                    // Others are sung by ever voice.
+                    // Others are sung by every voice.
 
                     if !consonant.mono || i == self.voices.len()/2 {
                         let j = self.step-consonant.start-self.voice_delays[i];
