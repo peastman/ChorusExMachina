@@ -39,6 +39,7 @@ pub struct ChorusExMachina {
     last_attack_rate: f32,
     last_release_rate: f32,
     last_stereo_width: f32,
+    last_time_spread: i32,
     last_vowel_delay: i32,
     last_accent: bool,
     last_phrase: i32,
@@ -71,6 +72,8 @@ struct ChorusExMachinaParams {
     pub release_rate: FloatParam,
     #[id = "stereo_width"]
     pub stereo_width: FloatParam,
+    #[id = "time_spread"]
+    pub time_spread: IntParam,
     #[id = "vowel_delay"]
     pub vowel_delay: IntParam,
     #[id = "accent"]
@@ -113,6 +116,7 @@ impl Default for ChorusExMachina {
             last_attack_rate: -1.0,
             last_release_rate: -1.0,
             last_stereo_width: -1.0,
+            last_time_spread: -1,
             last_vowel_delay: -1,
             last_accent: false,
             last_phrase: -1,
@@ -136,6 +140,7 @@ impl Default for ChorusExMachinaParams {
             attack_rate: FloatParam::new("Attack Rate", 0.8, FloatRange::Linear {min: 0.0, max: 1.0}),
             release_rate: FloatParam::new("Release Rate", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
             stereo_width: FloatParam::new("Stereo Width", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
+            time_spread: IntParam::new("Time Spread", 40, IntRange::Linear {min: 0, max: 100}),
             vowel_delay: IntParam::new("Vowel Delay", 0, IntRange::Linear {min: 0, max: 250}),
             accent: BoolParam::new("Accent", false),
             selected_phrase: IntParam::new("Selected Phrase", 0, IntRange::Linear {min: 0, max: 127}),
@@ -226,6 +231,10 @@ impl Plugin for ChorusExMachina {
         if self.last_stereo_width != self.params.stereo_width.value() {
             self.last_stereo_width = self.params.stereo_width.value();
             let _ = sender.send(Message::SetStereoWidth {width: self.last_stereo_width});
+        }
+        if self.last_time_spread != self.params.time_spread.value() {
+            self.last_time_spread = self.params.time_spread.value();
+            let _ = sender.send(Message::SetMaxVoiceDelay {max_delay: (self.last_time_spread*chorus::SAMPLE_RATE/1000) as i64});
         }
         if self.last_vowel_delay != self.params.vowel_delay.value() {
             self.last_vowel_delay = self.params.vowel_delay.value();

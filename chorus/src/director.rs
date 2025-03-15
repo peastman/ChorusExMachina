@@ -39,6 +39,7 @@ pub enum Message {
     SetAccent {accent: bool},
     SetStereoWidth {width: f32},
     SetMinVowelStartTime {samples: i64},
+    SetMaxVoiceDelay {max_delay: i64},
     SetDelays {vowel_delay: i64, vowel_transition_time: i64, consonant_delay: i64, consonant_transition_time: i64},
     SetConsonants {on_time: i64, off_time: i64, volume: f32, position: usize, frequency: f32, bandwidth: f32},
     SetRandomize {randomize: f32}
@@ -141,7 +142,7 @@ impl Director {
             transitions: vec![],
             current_note: None,
             consonants: vec![],
-            max_voice_delay: 700,
+            max_voice_delay: 2000,
             voice_delays: vec![],
             volume: 1.0,
             envelope: vec![],
@@ -193,16 +194,7 @@ impl Director {
         self.transitions.clear();
         self.current_note = None;
         self.consonants.clear();
-        self.voice_delays.clear();
-        if voice_count == 1 {
-            self.voice_delays.push(0);
-        }
-        else {
-            for i in 0..voice_count {
-                let index = ((i+(voice_count/2)) % voice_count) as i64;
-                self.voice_delays.push(self.max_voice_delay*index/(voice_count-1) as i64);
-            }
-        }
+        self.voice_delays = vec![0; voice_count];
         self.voice_pan = vec![0.0; voice_count];
         self.envelope = vec![0.0; voice_count];
         self.frequency = vec![0.0; voice_count];
@@ -252,6 +244,7 @@ impl Director {
         self.update_volume();
         self.update_frequency();
         self.update_sound();
+        self.update_voice_delays();
     }
 
     /// Start singing a new note.
@@ -570,7 +563,7 @@ impl Director {
         let mut delay_to_vowel = consonant.delay;
         let mut envelope_offset = 0;
         if !consonant.mono {
-            consonant.volume /= (self.voices.len() as f32).sqrt();
+            consonant.volume *= (1.0+(self.max_voice_delay as f32 / 2000.0))/(self.voices.len() as f32).sqrt();
         }
         self.consonants.push(consonant);
         if let Some(vowel) = adjacent_vowel {
@@ -771,6 +764,10 @@ impl Director {
                         Message::SetMinVowelStartTime {samples} => {
                             self.min_vowel_start = samples;
                         }
+                        Message::SetMaxVoiceDelay {max_delay} => {
+                            self.max_voice_delay = max_delay;
+                            self.update_voice_delays();
+                        }
                         Message::SetDelays {vowel_delay, vowel_transition_time, consonant_delay, consonant_transition_time} => {
                             // This message is only used for develoment.
                             self.vowel_delay = vowel_delay;
@@ -900,6 +897,20 @@ impl Director {
         else {
             for i in 0..voice_count {
                 self.voice_pan[i] = 0.5*PI*(0.5 + self.stereo_width*(i as f32 / (voice_count-1) as f32 - 0.5));
+            }
+        }
+    }
+
+    /// Update the delay for each voice.
+    fn update_voice_delays(&mut self) {
+        let voice_count = self.voices.len();
+        if voice_count == 1 {
+            self.voice_delays[0] = 0;
+        }
+        else {
+            for i in 0..voice_count {
+                let index = ((i+(voice_count/2)) % voice_count) as i64;
+                self.voice_delays[i] = self.max_voice_delay*index/(voice_count-1) as i64;
             }
         }
     }

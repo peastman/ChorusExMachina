@@ -119,6 +119,14 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
         draw_param_slider(ui, &params.attack_rate, setter);
         draw_param_slider(ui, &params.release_rate, setter);
         draw_param_slider(ui, &params.stereo_width, setter);
+        ui.label("Time Spread (ms)");
+        let mut spread = params.time_spread.value();
+        if ui.add(egui::Slider::new(&mut spread, 0..=100)).changed() {
+            setter.begin_set_parameter(&params.time_spread);
+            setter.set_parameter(&params.time_spread, spread);
+            setter.end_set_parameter(&params.time_spread);
+        }
+        ui.end_row();
         ui.label("Vowel Delay (ms)");
         let mut delay = params.vowel_delay.value();
         if ui.add(egui::Slider::new(&mut delay, 0..=250)).changed() {
