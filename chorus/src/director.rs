@@ -556,14 +556,11 @@ impl Director {
         let mut consonant = self.phonemes.get_consonant(c, adjacent_vowel, is_final, time_scale).unwrap();
         consonant.start = self.step+delay+consonant.delay;
         consonant.volume *= 2.0*self.consonant_volume;
-        if is_final {
-            consonant.off_time = (consonant.off_time as f32 * 0.8) as i64;
-        }
         let delay_to_consonant = consonant.delay+consonant.on_time+consonant.off_time;
         let mut delay_to_vowel = consonant.delay;
         let mut envelope_offset = 0;
         if !consonant.mono {
-            consonant.volume *= (1.0+(self.max_voice_delay as f32 / 2000.0))/(self.voices.len() as f32).sqrt();
+            consonant.volume *= (1.0+(self.max_voice_delay as f32 / 4000.0))/(self.voices.len() as f32).sqrt();
         }
         self.consonants.push(consonant);
         if let Some(vowel) = adjacent_vowel {
