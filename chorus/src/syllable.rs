@@ -37,7 +37,7 @@ impl Syllable {
     pub fn build(sampa: &str) -> Result<Syllable, String> {
         // First split the string into initial consonants, vowels, and final consonants.
 
-        let sampa = sampa.replace("ts", "ʦ").replace("tS", "ʧ").replace("dZ", "ʤ").replace("r", "4r");
+        let sampa = sampa.replace("ts", "ʦ").replace("tS", "ʧ").replace("dZ", "ʤ").replace("r", "rr4");
         let mut initial_consonants: Vec<char> = Vec::new();
         let mut vowels: Vec<char> = Vec::new();
         let mut final_consonants: Vec<char> = Vec::new();
