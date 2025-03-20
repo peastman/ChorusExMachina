@@ -419,7 +419,8 @@ impl Director {
         let amplification = self.phonemes.get_amplification(new_syllable.main_vowel);
         let max_amplitude = if self.accent {amplification*(1.0+2.5*velocity)} else {amplification};
         let (_vowel_delay, vowel_transition_time) = self.get_vowel_timing(new_syllable.main_vowel, false);
-        self.add_transition(delay-envelope_offset, vowel_transition_time.max(attack_time), TransitionData::EnvelopeChange {
+        attack_time = vowel_transition_time.max(attack_time);
+        self.add_transition(delay-envelope_offset, attack_time, TransitionData::EnvelopeChange {
             start_envelope: self.envelope_after_transitions,
             end_envelope: max_amplitude
         });
