@@ -919,13 +919,13 @@ impl Director {
             if is_final {
                 return (500, 3200);
             }
-            return (1000, 3200);
+            return (0, 3200);
         }
         if vowel == 'n' {
             if is_final {
                 return (500, 3200);
             }
-            return (1000, self.vowel_transition_time);
+            return (0, self.vowel_transition_time);
         }
         if vowel == 'N' {
             return (1000, 2000);
