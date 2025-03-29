@@ -10,8 +10,8 @@ crate-type = ["cdylib", "lib"]
 
 [dependencies]
 chorus = { path = "../chorus" }
-nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = ["standalone"] }
-nih_plug_egui = { git = "https://github.com/robbert-vdh/nih-plug.git" }
+nih_plug = { git = "https://github.com/peastman/nih-plug.git", rev = "980290b3b91696d9038f2d9ba463128a8657c21c", features = ["standalone"] }
+nih_plug_egui = { git = "https://github.com/peastman/nih-plug.git", rev = "980290b3b91696d9038f2d9ba463128a8657c21c" }
 egui_extras = "0.31.0"
 egui_commonmark = "0.20.0"
 
