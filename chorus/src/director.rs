@@ -563,7 +563,12 @@ impl Director {
         if !consonant.mono {
             consonant.volume *= (1.0+(self.max_voice_delay as f32 / 4000.0))/(self.voices.len() as f32).sqrt();
         }
-        self.consonants.push(consonant);
+        if consonant.samples.len() > 0 {
+            // Half the voices will use sampled consonants.  Randomly select the samples.
+
+            let count = usize::max(1, self.voices.len()/2);
+            consonant.sample_indices = self.random.get_indices(count, consonant.samples.len());
+        }
         if let Some(vowel) = adjacent_vowel {
             let nasal_coupling = self.phonemes.get_nasal_coupling(vowel);
             if is_final {
@@ -582,6 +587,7 @@ impl Director {
                 envelope_offset = consonant.transition_time;
             }
         }
+        self.consonants.push(consonant);
         (delay_to_consonant, delay_to_vowel, envelope_offset)
     }
 
@@ -673,22 +679,36 @@ impl Director {
 
                     if !consonant.mono || i == self.voices.len()/2 {
                         let j = self.step-consonant.start-self.voice_delays[i];
+                        let mut consonant_duration = consonant.on_time+consonant.off_time;
                         if j > 0 {
                             consonant_position = consonant.position;
-                            if j < consonant.on_time {
-                                let volume = consonant.volume*(j as f32 / consonant.on_time as f32);
-                                consonant_noise = volume*consonant.filter.process(2.0*self.random.get_uniform()-1.0);
+                            if i < consonant.sample_indices.len() {
+                                // Use a sampled consonant.
+
+                                let index = consonant.sample_indices[i];
+                                consonant_duration = consonant.samples[index].len() as i64;
+                                if j < consonant_duration {
+                                    consonant_noise = 50.0*consonant.volume*(consonant.samples[index][j as usize] as f32)/32768.0;
+                                }
                             }
-                            else if j < consonant.on_time+consonant.off_time {
-                                let k = j-consonant.on_time;
-                                let volume = consonant.volume*((consonant.off_time-k) as f32 / consonant.off_time as f32);
-                                consonant_noise = volume*consonant.filter.process(2.0*self.random.get_uniform()-1.0);
+                            else {
+                                // Use a synthesized consonant.
+
+                                if j < consonant.on_time {
+                                    let volume = consonant.volume*(j as f32 / consonant.on_time as f32);
+                                    consonant_noise = volume*consonant.filter.process(2.0*self.random.get_uniform()-1.0);
+                                }
+                                else if j < consonant_duration {
+                                    let k = j-consonant.on_time;
+                                    let volume = consonant.volume*((consonant.off_time-k) as f32 / consonant.off_time as f32);
+                                    consonant_noise = volume*consonant.filter.process(2.0*self.random.get_uniform()-1.0);
+                                }
                             }
                         }
                         if consonant.mono {
                             consonant_noise *= (self.voices.len() as f32).sqrt();
                         }
-                        if j < consonant.on_time+consonant.off_time {
+                        if j < consonant_duration {
                             consonant_finished = false;
                         }
                     }

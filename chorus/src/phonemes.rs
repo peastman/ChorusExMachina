@@ -16,6 +16,7 @@
 use crate::filter::ResonantFilter;
 use crate::VoicePart;
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 use std::f32::consts::PI;
 
 /// A Phonemes object acts as a database of information on how to pronounce vowels and consonants.
@@ -252,6 +253,24 @@ impl Phonemes {
         result.add_consonant('ʦ', 3000, 2700, 1600, 2400, 0.01, 47, 5000.0, 900.0, true, false, 't', 0.5, false, true);
         result.add_consonant('ʧ', 200, 2700, 2100, 2300, 0.009, 45, 2000.0, 3000.0, true, false, 'S', 0.1, false, false);
         result.add_consonant('ʧ', 3000, 2700, 2100, 2300, 0.009, 45, 2000.0, 3000.0, true, false, 'S', 0.1, false, true);
+        match voice_part {
+            VoicePart::Soprano => {
+            }
+            VoicePart::Alto => {
+            }
+            VoicePart::Tenor => {
+                result.set_consonant_samples('t', vec![parse_flac(include_bytes!("consonants/tenor/t0.flac")), parse_flac(include_bytes!("consonants/tenor/t1.flac")),
+                    parse_flac(include_bytes!("consonants/tenor/t2.flac")), parse_flac(include_bytes!("consonants/tenor/t3.flac")), parse_flac(include_bytes!("consonants/tenor/t4.flac")),
+                    parse_flac(include_bytes!("consonants/tenor/t5.flac")), parse_flac(include_bytes!("consonants/tenor/t6.flac")), parse_flac(include_bytes!("consonants/tenor/t7.flac")),
+                    parse_flac(include_bytes!("consonants/tenor/t7.flac")), parse_flac(include_bytes!("consonants/tenor/t9.flac"))]);
+            }
+            VoicePart::Bass => {
+                result.set_consonant_samples('t', vec![parse_flac(include_bytes!("consonants/bass/t0.flac")), parse_flac(include_bytes!("consonants/bass/t1.flac")),
+                    parse_flac(include_bytes!("consonants/bass/t2.flac")), parse_flac(include_bytes!("consonants/bass/t3.flac")), parse_flac(include_bytes!("consonants/bass/t4.flac")),
+                    parse_flac(include_bytes!("consonants/bass/t5.flac")), parse_flac(include_bytes!("consonants/bass/t6.flac")), parse_flac(include_bytes!("consonants/bass/t7.flac")),
+                    parse_flac(include_bytes!("consonants/bass/t7.flac")), parse_flac(include_bytes!("consonants/bass/t9.flac"))]);
+            }
+        }
         result
     }
 
@@ -279,7 +298,9 @@ impl Phonemes {
             filter: ResonantFilter::new(frequency*ratio, bandwidth*ratio),
             mono: mono,
             voiced: voiced,
-            shape: ConsonantShape {base_shape: base_shape, blend: blend, constrict: constrict}
+            shape: ConsonantShape {base_shape: base_shape, blend: blend, constrict: constrict},
+            samples: Arc::new(Vec::new()),
+            sample_indices: Vec::new()
         };
         if is_final {
             self.final_consonant_map.insert(sampa, consonant);
@@ -291,6 +312,17 @@ impl Phonemes {
             self.voiced_consonants.insert(sampa);
         }
     }
+
+    /// Set the data for a sampled consonant.
+    fn set_consonant_samples(&mut self, consonant: char, samples: Vec<Vec<i16>>) {
+        let samples = Arc::new(samples.clone());
+        if let Some(c) = self.consonant_map.get_mut(&consonant) {
+            c.samples = Arc::clone(&samples);
+        }
+        if let Some(c) = self.final_consonant_map.get_mut(&consonant) {
+            c.samples = Arc::clone(&samples);
+        }
+}
 
     /// Get the vocal tract shape (cross-sectional areas for each segment) corresponding to a vowel.
     /// The return value can be passed to voice::set_vocal_shape().
@@ -320,12 +352,12 @@ impl Phonemes {
         let mut result = None;
         if is_final {
             if let Some(c) = self.final_consonant_map.get(&consonant) {
-                result = Some(*c);
+                result = Some(c.clone());
             }
         }
         if result.is_none() {
             if let Some(c) = self.consonant_map.get(&consonant) {
-                result = Some(*c);
+                result = Some(c.clone());
             }
         }
         if let Some(mut c) = result {
@@ -411,6 +443,19 @@ impl Phonemes {
     }
 }
 
+/// Convert a FLAC encoded sample to raw audio data.
+fn parse_flac(file: &[u8]) -> Vec<i16> {
+    let mut reader = claxon::FlacReader::new(file).unwrap();
+    assert_eq!(48000, reader.streaminfo().sample_rate);
+    assert_eq!(1, reader.streaminfo().channels);
+    assert_eq!(16, reader.streaminfo().bits_per_sample);
+    let mut samples = Vec::new();
+    for sample in reader.samples() {
+        samples.push(sample.unwrap() as i16);
+    }
+    samples
+}
+
 /// A description of how to form the vocal tract shape.  This involves
 ///
 /// 1. Starting from a fixed shape specific to the consonant.
@@ -430,7 +475,7 @@ pub struct ConsonantShape {
 /// 3. Passing it through a resonant filter to shape the spectrum.
 /// 4. Injecting it into the vocal tract at a particular point.
 /// 5. Adjusting the shape of the vocal tract.
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Consonant {
     pub sampa: char,
     pub start: i64,
@@ -443,5 +488,7 @@ pub struct Consonant {
     pub filter: ResonantFilter,
     pub mono: bool,
     pub voiced: bool,
-    pub shape: ConsonantShape
+    pub shape: ConsonantShape,
+    pub samples: Arc<Vec<Vec<i16>>>,
+    pub sample_indices: Vec<usize>
 }

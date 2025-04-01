@@ -73,4 +73,14 @@ impl Random {
             }
         }
     }
+
+    /// Get count indices randomly selected from 0..range.
+    pub fn get_indices(&mut self, count: usize, range: usize) -> Vec<usize> {
+        let mut samples: Vec<usize> = (0..range).collect();
+        for i in 0..count {
+            let j = self.get_int() >> 16;
+            samples.swap(i, j as usize % range);
+        }
+        samples[..count].to_vec()
+    }
 }
