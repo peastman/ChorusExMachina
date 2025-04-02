@@ -259,10 +259,22 @@ impl Phonemes {
             VoicePart::Alto => {
             }
             VoicePart::Tenor => {
+                result.set_consonant_samples('b', vec![parse_flac(include_bytes!("consonants/tenor/b0.flac")), parse_flac(include_bytes!("consonants/tenor/b1.flac")),
+                    parse_flac(include_bytes!("consonants/tenor/b2.flac")), parse_flac(include_bytes!("consonants/tenor/b3.flac")), parse_flac(include_bytes!("consonants/tenor/b4.flac")),
+                    parse_flac(include_bytes!("consonants/tenor/b5.flac")), parse_flac(include_bytes!("consonants/tenor/b6.flac")), parse_flac(include_bytes!("consonants/tenor/b7.flac")),
+                    parse_flac(include_bytes!("consonants/tenor/b7.flac")), parse_flac(include_bytes!("consonants/tenor/b9.flac"))]);
                 result.set_consonant_samples('d', vec![parse_flac(include_bytes!("consonants/tenor/d0.flac")), parse_flac(include_bytes!("consonants/tenor/d1.flac")),
                     parse_flac(include_bytes!("consonants/tenor/d2.flac")), parse_flac(include_bytes!("consonants/tenor/d3.flac")), parse_flac(include_bytes!("consonants/tenor/d4.flac")),
                     parse_flac(include_bytes!("consonants/tenor/d5.flac")), parse_flac(include_bytes!("consonants/tenor/d6.flac")), parse_flac(include_bytes!("consonants/tenor/d7.flac")),
                     parse_flac(include_bytes!("consonants/tenor/d7.flac")), parse_flac(include_bytes!("consonants/tenor/d9.flac"))]);
+                result.set_consonant_samples('g', vec![parse_flac(include_bytes!("consonants/tenor/g0.flac")), parse_flac(include_bytes!("consonants/tenor/g1.flac")),
+                    parse_flac(include_bytes!("consonants/tenor/g2.flac")), parse_flac(include_bytes!("consonants/tenor/g3.flac")), parse_flac(include_bytes!("consonants/tenor/g4.flac")),
+                    parse_flac(include_bytes!("consonants/tenor/g5.flac")), parse_flac(include_bytes!("consonants/tenor/g6.flac")), parse_flac(include_bytes!("consonants/tenor/g7.flac")),
+                    parse_flac(include_bytes!("consonants/tenor/g7.flac")), parse_flac(include_bytes!("consonants/tenor/g9.flac"))]);
+                result.set_consonant_samples('k', vec![parse_flac(include_bytes!("consonants/tenor/k0.flac")), parse_flac(include_bytes!("consonants/tenor/k1.flac")),
+                    parse_flac(include_bytes!("consonants/tenor/k2.flac")), parse_flac(include_bytes!("consonants/tenor/k3.flac")), parse_flac(include_bytes!("consonants/tenor/k4.flac")),
+                    parse_flac(include_bytes!("consonants/tenor/k5.flac")), parse_flac(include_bytes!("consonants/tenor/k6.flac")), parse_flac(include_bytes!("consonants/tenor/k7.flac")),
+                    parse_flac(include_bytes!("consonants/tenor/k7.flac")), parse_flac(include_bytes!("consonants/tenor/k9.flac"))]);
                 result.set_consonant_samples('p', vec![parse_flac(include_bytes!("consonants/tenor/p0.flac")), parse_flac(include_bytes!("consonants/tenor/p1.flac")),
                     parse_flac(include_bytes!("consonants/tenor/p2.flac")), parse_flac(include_bytes!("consonants/tenor/p3.flac")), parse_flac(include_bytes!("consonants/tenor/p4.flac")),
                     parse_flac(include_bytes!("consonants/tenor/p5.flac")), parse_flac(include_bytes!("consonants/tenor/p6.flac")), parse_flac(include_bytes!("consonants/tenor/p7.flac")),
@@ -273,10 +285,22 @@ impl Phonemes {
                     parse_flac(include_bytes!("consonants/tenor/t7.flac")), parse_flac(include_bytes!("consonants/tenor/t9.flac"))]);
             }
             VoicePart::Bass => {
+                result.set_consonant_samples('b', vec![parse_flac(include_bytes!("consonants/bass/b0.flac")), parse_flac(include_bytes!("consonants/bass/b1.flac")),
+                    parse_flac(include_bytes!("consonants/bass/b2.flac")), parse_flac(include_bytes!("consonants/bass/b3.flac")), parse_flac(include_bytes!("consonants/bass/b4.flac")),
+                    parse_flac(include_bytes!("consonants/bass/b5.flac")), parse_flac(include_bytes!("consonants/bass/b6.flac")), parse_flac(include_bytes!("consonants/bass/b7.flac")),
+                    parse_flac(include_bytes!("consonants/bass/b7.flac")), parse_flac(include_bytes!("consonants/bass/b9.flac"))]);
                 result.set_consonant_samples('d', vec![parse_flac(include_bytes!("consonants/bass/d0.flac")), parse_flac(include_bytes!("consonants/bass/d1.flac")),
                     parse_flac(include_bytes!("consonants/bass/d2.flac")), parse_flac(include_bytes!("consonants/bass/d3.flac")), parse_flac(include_bytes!("consonants/bass/d4.flac")),
                     parse_flac(include_bytes!("consonants/bass/d5.flac")), parse_flac(include_bytes!("consonants/bass/d6.flac")), parse_flac(include_bytes!("consonants/bass/d7.flac")),
                     parse_flac(include_bytes!("consonants/bass/d7.flac")), parse_flac(include_bytes!("consonants/bass/d9.flac"))]);
+                result.set_consonant_samples('g', vec![parse_flac(include_bytes!("consonants/bass/g0.flac")), parse_flac(include_bytes!("consonants/bass/g1.flac")),
+                    parse_flac(include_bytes!("consonants/bass/g2.flac")), parse_flac(include_bytes!("consonants/bass/g3.flac")), parse_flac(include_bytes!("consonants/bass/g4.flac")),
+                    parse_flac(include_bytes!("consonants/bass/g5.flac")), parse_flac(include_bytes!("consonants/bass/g6.flac")), parse_flac(include_bytes!("consonants/bass/g7.flac")),
+                    parse_flac(include_bytes!("consonants/bass/g7.flac")), parse_flac(include_bytes!("consonants/bass/g9.flac"))]);
+                result.set_consonant_samples('k', vec![parse_flac(include_bytes!("consonants/bass/k0.flac")), parse_flac(include_bytes!("consonants/bass/k1.flac")),
+                    parse_flac(include_bytes!("consonants/bass/k2.flac")), parse_flac(include_bytes!("consonants/bass/k3.flac")), parse_flac(include_bytes!("consonants/bass/k4.flac")),
+                    parse_flac(include_bytes!("consonants/bass/k5.flac")), parse_flac(include_bytes!("consonants/bass/k6.flac")), parse_flac(include_bytes!("consonants/bass/k7.flac")),
+                    parse_flac(include_bytes!("consonants/bass/k7.flac")), parse_flac(include_bytes!("consonants/bass/k9.flac"))]);
                 result.set_consonant_samples('p', vec![parse_flac(include_bytes!("consonants/bass/p0.flac")), parse_flac(include_bytes!("consonants/bass/p1.flac")),
                     parse_flac(include_bytes!("consonants/bass/p2.flac")), parse_flac(include_bytes!("consonants/bass/p3.flac")), parse_flac(include_bytes!("consonants/bass/p4.flac")),
                     parse_flac(include_bytes!("consonants/bass/p5.flac")), parse_flac(include_bytes!("consonants/bass/p6.flac")), parse_flac(include_bytes!("consonants/bass/p7.flac")),
