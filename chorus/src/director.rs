@@ -564,9 +564,9 @@ impl Director {
             consonant.volume *= (1.0+(self.max_voice_delay as f32 / 4000.0))/(self.voices.len() as f32).sqrt();
         }
         if consonant.samples.len() > 0 {
-            // Half the voices will use sampled consonants.  Randomly select the samples.
+            // Some of the voices will use sampled consonants.  Randomly select the samples.
 
-            let count = usize::max(1, self.voices.len()/2);
+            let count = usize::max(1, self.voices.len()*3/4);
             consonant.sample_indices = self.random.get_indices(count, consonant.samples.len());
         }
         if let Some(vowel) = adjacent_vowel {

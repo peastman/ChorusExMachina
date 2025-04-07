@@ -210,10 +210,10 @@ impl Phonemes {
             VoicePart::Tenor => 43,
             VoicePart::Bass => 42
         };
-        result.add_consonant('b', 100, 2700, 300, 1500, 0.004, 46, 700.0, 4300.0, false, true, 'p', 1.0, true, false);
-        result.add_consonant('b', 100, 2700, 300, 1500, 0.005, 46, 700.0, 4300.0, false, true, 'p', 0.8, true, true);
-        result.add_consonant('d', 300, 4500, 1500, 1900, 0.006, dpos, 1200.0, 3000.0, false, true, 't', 0.1, true, false);
-        result.add_consonant('d', 0, 3000, 900, 1500, 0.006, dpos, 1200.0, 3000.0, false, false, 't', 0.4, true, true);
+        result.add_consonant('b', 100, 2700, 100, 1000, 0.004, 46, 700.0, 4300.0, false, true, 'p', 1.0, true, false);
+        result.add_consonant('b', 100, 2700, 100, 1000, 0.005, 46, 700.0, 4300.0, false, true, 'p', 0.8, true, true);
+        result.add_consonant('d', 300, 4500, 900, 900, 0.006, dpos, 1200.0, 3000.0, false, true, 't', 0.1, true, false);
+        result.add_consonant('d', 0, 1600, 900, 600, 0.008, dpos, 1200.0, 3000.0, false, false, 't', 0.4, true, true);
         result.add_consonant('f', 1000, 2000, 2000, 2000, 0.009, 46, 2500.0, 5000.0, true, false, ' ', 1.0, true, false);
         result.add_consonant('f', 2500, 1500, 2000, 2000, 0.008, 46, 2500.0, 5000.0, true, false, ' ', 1.0, true, true);
         result.add_consonant('g', 600, 2700, 200, 750, 0.005, 44, 1025.0, 5200.0, false, true, 'k', 0.25, true, false);
@@ -222,12 +222,12 @@ impl Phonemes {
         result.add_consonant('j', 0, 3000, 0, 0, 0.0, 1, 4150.0, 6500.0, false, true, 'i', 0.0, false, false);
         result.add_consonant('k', 500, 1500, 900, 1100, 0.010, 35, 4200.0, 4000.0, false, false, 'k', 0.8, true, false);
         result.add_consonant('k', 500, 1500, 900, 1100, 0.015, 35, 4200.0, 4000.0, false, false, 'k', 0.8, true, true);
-        result.add_consonant('p', 1200, 500, 300, 1500, 0.007, 48, 700.0, 4300.0, false, false, 'p', 0.85, true, false);
+        result.add_consonant('p', 1200, 500, 100, 900, 0.007, 48, 700.0, 4300.0, false, false, 'p', 0.85, true, false);
         result.add_consonant('r', 300, 4000, 700, 800, 0.007, 43, 1170.0, 4000.0, false, true, '3', 0.2, true, false);
         result.add_consonant('s', 2000, 2000, 3500, 2000, 0.015, 47, 5000.0, 900.0, true, false, ' ', 1.0, true, false);
         result.add_consonant('s', 3000, 3000, 3500, 1700, 0.012, 47, 5000.0, 900.0, true, false, ' ', 1.0, true, true);
         result.add_consonant('t', 300, 1500, 850, 1500, 0.012, 42, 2000.0, 6000.0, false, false, 't', 0.75, true, false);
-        result.add_consonant('t', 300, 2500, 850, 1500, 0.01, 42, 2000.0, 4000.0, false, false, 't', 1.0, true, true);
+        result.add_consonant('t', 300, 1600, 850, 1500, 0.01, 42, 2000.0, 4000.0, false, false, 't', 1.0, true, true);
         result.add_consonant('v', 700, 4000, 2000, 2000, 0.011, 46, 1400.0, 5000.0, true, true, ' ', 1.0, true, false);
         result.add_consonant('v', 700, 1500, 2000, 2000, 0.007, 46, 1400.0, 5000.0, true, true, ' ', 1.0, true, false);
         result.add_consonant('w', 0, 3500, 0, 0, 0.0, 48, 4150.0, 6500.0, false, true, 'u', 1.0, true, false);
@@ -262,7 +262,7 @@ impl Phonemes {
                 result.set_consonant_samples('d', vec![parse_flac(include_bytes!("consonants/soprano/d0.flac")), parse_flac(include_bytes!("consonants/soprano/d1.flac")),
                     parse_flac(include_bytes!("consonants/soprano/d2.flac")), parse_flac(include_bytes!("consonants/soprano/d3.flac")), parse_flac(include_bytes!("consonants/soprano/d4.flac")),
                     parse_flac(include_bytes!("consonants/soprano/d5.flac")), parse_flac(include_bytes!("consonants/soprano/d6.flac")), parse_flac(include_bytes!("consonants/soprano/d7.flac")),
-                    parse_flac(include_bytes!("consonants/soprano/d7.flac")), parse_flac(include_bytes!("consonants/soprano/d9.flac"))], 3.0);
+                    parse_flac(include_bytes!("consonants/soprano/d7.flac")), parse_flac(include_bytes!("consonants/soprano/d9.flac"))], 2.0);
                 result.set_consonant_samples('g', vec![parse_flac(include_bytes!("consonants/soprano/g0.flac")), parse_flac(include_bytes!("consonants/soprano/g1.flac")),
                     parse_flac(include_bytes!("consonants/soprano/g2.flac")), parse_flac(include_bytes!("consonants/soprano/g3.flac")), parse_flac(include_bytes!("consonants/soprano/g4.flac")),
                     parse_flac(include_bytes!("consonants/soprano/g5.flac")), parse_flac(include_bytes!("consonants/soprano/g6.flac")), parse_flac(include_bytes!("consonants/soprano/g7.flac")),
@@ -288,7 +288,7 @@ impl Phonemes {
                 result.set_consonant_samples('d', vec![parse_flac(include_bytes!("consonants/alto/d0.flac")), parse_flac(include_bytes!("consonants/alto/d1.flac")),
                     parse_flac(include_bytes!("consonants/alto/d2.flac")), parse_flac(include_bytes!("consonants/alto/d3.flac")), parse_flac(include_bytes!("consonants/alto/d4.flac")),
                     parse_flac(include_bytes!("consonants/alto/d5.flac")), parse_flac(include_bytes!("consonants/alto/d6.flac")), parse_flac(include_bytes!("consonants/alto/d7.flac")),
-                    parse_flac(include_bytes!("consonants/alto/d7.flac")), parse_flac(include_bytes!("consonants/alto/d9.flac"))], 3.0);
+                    parse_flac(include_bytes!("consonants/alto/d7.flac")), parse_flac(include_bytes!("consonants/alto/d9.flac"))], 2.0);
                 result.set_consonant_samples('g', vec![parse_flac(include_bytes!("consonants/alto/g0.flac")), parse_flac(include_bytes!("consonants/alto/g1.flac")),
                     parse_flac(include_bytes!("consonants/alto/g2.flac")), parse_flac(include_bytes!("consonants/alto/g3.flac")), parse_flac(include_bytes!("consonants/alto/g4.flac")),
                     parse_flac(include_bytes!("consonants/alto/g5.flac")), parse_flac(include_bytes!("consonants/alto/g6.flac")), parse_flac(include_bytes!("consonants/alto/g7.flac")),
@@ -344,7 +344,7 @@ impl Phonemes {
                 result.set_consonant_samples('d', vec![parse_flac(include_bytes!("consonants/bass/d0.flac")), parse_flac(include_bytes!("consonants/bass/d1.flac")),
                     parse_flac(include_bytes!("consonants/bass/d2.flac")), parse_flac(include_bytes!("consonants/bass/d3.flac")), parse_flac(include_bytes!("consonants/bass/d4.flac")),
                     parse_flac(include_bytes!("consonants/bass/d5.flac")), parse_flac(include_bytes!("consonants/bass/d6.flac")), parse_flac(include_bytes!("consonants/bass/d7.flac")),
-                    parse_flac(include_bytes!("consonants/bass/d7.flac")), parse_flac(include_bytes!("consonants/bass/d9.flac"))], 3.0);
+                    parse_flac(include_bytes!("consonants/bass/d7.flac")), parse_flac(include_bytes!("consonants/bass/d9.flac"))], 2.5);
                 result.set_consonant_samples('g', vec![parse_flac(include_bytes!("consonants/bass/g0.flac")), parse_flac(include_bytes!("consonants/bass/g1.flac")),
                     parse_flac(include_bytes!("consonants/bass/g2.flac")), parse_flac(include_bytes!("consonants/bass/g3.flac")), parse_flac(include_bytes!("consonants/bass/g4.flac")),
                     parse_flac(include_bytes!("consonants/bass/g5.flac")), parse_flac(include_bytes!("consonants/bass/g6.flac")), parse_flac(include_bytes!("consonants/bass/g7.flac")),
