@@ -671,9 +671,7 @@ impl Director {
 
                 let mut consonant_noise = 0.0;
                 let mut consonant_position = 0;
-                if self.consonants.len() > 0 {
-                    let consonant = &mut self.consonants[0];
-
+                for (k, consonant) in self.consonants.iter_mut().enumerate() {
                     // Mono consonants are only sung by one voice (the one panned to the center).
                     // Others are sung by every voice.
 
@@ -708,7 +706,7 @@ impl Director {
                         if consonant.mono {
                             consonant_noise *= (self.voices.len() as f32).sqrt();
                         }
-                        if j < consonant_duration {
+                        if j < consonant_duration && k == 0 {
                             consonant_finished = false;
                         }
                     }
