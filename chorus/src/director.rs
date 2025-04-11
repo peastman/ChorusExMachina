@@ -500,13 +500,13 @@ impl Director {
             else {
                 off_time = off_time.min(first_consonant.transition_time);
             }
-            for (i, c) in consonants.iter().enumerate() {
+            for c in consonants.iter() {
                 let mut time_scale = if legato {0.8} else {1.0};
                 if consonants.len() > 1 {
                     time_scale *= 0.8;
                 }
                 // Emphasize the final consonant at the end of a line.
-                let amplify = if legato || i < consonants.len()-1 {1.0} else {1.2};
+                let amplify = if legato || consonants.len() > 1 {1.0} else {1.2};
                 let (delay_to_consonant, _delay_to_vowel, _envelope_offset) = self.add_consonant(delay, *c, final_vowel, true, note_index, time_scale, amplify);
                 delay += delay_to_consonant;
             }
@@ -899,7 +899,7 @@ impl Director {
         }
         if let Some(note) = &self.current_note {
             let x = (self.highest_note-note.note_index) as f32 / (self.highest_note-self.lowest_note) as f32;
-            let rd = 1.6 + 0.4*x - 0.2*self.volume - (self.intensity-0.5);
+            let rd = 1.5 + 0.5*x - 0.2*self.volume - (self.intensity-0.5);
             for (i, voice) in &mut self.voices.iter_mut().enumerate() {
                 voice.set_rd(rd + 0.1*(i%4) as f32);
             }
