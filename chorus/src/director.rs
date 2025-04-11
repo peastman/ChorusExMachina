@@ -353,7 +353,7 @@ impl Director {
                 if new_syllable.initial_consonants.len() > 1 {
                     time_scale *= 0.8;
                 }
-                let (delay_to_consonant, delay_to_vowel, offset) = self.add_consonant(delay, new_syllable.initial_consonants[i], Some(adjacent_vowel), false, note_index, time_scale);
+                let (delay_to_consonant, delay_to_vowel, offset) = self.add_consonant(delay, new_syllable.initial_consonants[i], Some(adjacent_vowel), false, note_index, time_scale, 1.0);
                 envelope_offset = offset;
                 if i == new_syllable.initial_consonants.len()-1 {
                     delay += delay_to_vowel;
@@ -500,12 +500,14 @@ impl Director {
             else {
                 off_time = off_time.min(first_consonant.transition_time);
             }
-            for c in &consonants {
+            for (i, c) in consonants.iter().enumerate() {
                 let mut time_scale = if legato {0.8} else {1.0};
                 if consonants.len() > 1 {
                     time_scale *= 0.8;
                 }
-                let (delay_to_consonant, _delay_to_vowel, _envelope_offset) = self.add_consonant(delay, *c, final_vowel, true, note_index, time_scale);
+                // Emphasize the final consonant at the end of a line.
+                let amplify = if legato || i < consonants.len()-1 {1.0} else {1.2};
+                let (delay_to_consonant, _delay_to_vowel, _envelope_offset) = self.add_consonant(delay, *c, final_vowel, true, note_index, time_scale, amplify);
                 delay += delay_to_consonant;
             }
         }
@@ -553,10 +555,10 @@ impl Director {
 
     /// Play a consonant.  This adds a Consonant to the queue, and if necessary also adds a
     /// Transition to control the vocal tract shape appropriately.
-    fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool, note_index: i32, time_scale: f32) -> (i64, i64, i64) {
+    fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool, note_index: i32, time_scale: f32, amplify: f32) -> (i64, i64, i64) {
         let mut consonant = self.phonemes.get_consonant(c, adjacent_vowel, is_final, time_scale).unwrap();
         consonant.start = self.step+delay+consonant.delay;
-        consonant.volume *= 2.0*self.consonant_volume;
+        consonant.volume *= 2.0*self.consonant_volume*amplify;
         let delay_to_consonant = consonant.delay+consonant.on_time+consonant.off_time;
         let mut delay_to_vowel = consonant.delay;
         let mut envelope_offset = 0;
