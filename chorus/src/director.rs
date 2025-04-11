@@ -226,7 +226,7 @@ impl Director {
                 self.high_blend_fraction = 0.1;
             }
             VoicePart::Bass => {
-                vocal_length = 51;
+                vocal_length = 52;
                 self.lowest_note = 36;
                 self.highest_note = 67;
                 self.high_blend_note = 60;

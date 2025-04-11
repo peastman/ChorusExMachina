@@ -240,7 +240,7 @@ impl Voice {
                 nasal_shape = vec![1.52, 1.7, 2.04, 2.68, 3.38, 4.18, 4.4, 3.4, 2.45, 2.47, 2.3, 2.08, 2.18, 2.51, 2.8, 2.55, 1.72, 1.39, 1.36, 1.13, 1.11, 1.04, 0.668];
             }
             VoicePart::Bass => {
-                vocal_length = 51;
+                vocal_length = 52;
                 coupling_position = 25;
                 vibrato_frequency = 5.2;
                 formant_frequency = 2600.0;
