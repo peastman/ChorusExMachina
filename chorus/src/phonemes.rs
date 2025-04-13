@@ -241,8 +241,8 @@ impl Phonemes {
         result.add_consonant('D', 200, 3000, 4000, 2000, 0.012, 44, 4500.0, 5000.0, 1.0, true, true, 't', 0.2, false, true);
         result.add_consonant('S', 3000, 3000, 4000, 2500, 0.004, 47, 3000.0, 900.0, 1.0, true, false, 'S', 0.2, true, false);
         result.add_consonant('S', 3000, 3000, 3500, 2000, 0.005, 47, 3000.0, 900.0, 1.0, true, false, 'S', 0.2, true, true);
-        result.add_consonant('T', 1000, 3000, 3000, 2000, 0.017, 44, 4500.0, 5000.0, 1.0, true, false, ' ', 1.0, true, false);
-        result.add_consonant('T', 1500, 3000, 3000, 2000, 0.01, 44, 4500.0, 5000.0, 1.0, true, false, ' ', 1.0, true, true);
+        result.add_consonant('T', 1000, 3000, 3000, 2000, 0.012, 44, 4500.0, 5000.0, 1.0, true, false, ' ', 1.0, true, false);
+        result.add_consonant('T', 1500, 3000, 3000, 2000, 0.006, 44, 4500.0, 5000.0, 1.0, true, false, ' ', 1.0, true, true);
         result.add_consonant('Z', 100, 3000, 4000, 2000, 0.017, 47, 3000.0, 700.0, 1.0, true, true, 'S', 0.2, false, false);
         result.add_consonant('Z', 100, 3000, 4000, 2000, 0.008, 47, 3000.0, 700.0, 1.0, true, true, 'S', 0.2, false, true);
         result.add_consonant('4', 100, 4000, 700, 900, 0.015, 43, 1170.0, 4000.0, 1.0, false, true, '3', 0.0, false, false);
