@@ -411,7 +411,7 @@ impl Director {
             self.add_vowel_transition(delay, prev_vowel.unwrap(), new_syllable.main_vowel, self.vowel_transition_time, note_index);
         }
         else {
-            self.add_shape_transition(delay, transition_time, shape, nasal_coupling, note_index)
+            self.add_shape_transition(delay, transition_time, shape, nasal_coupling, note_index, true)
         }
 
         // Adjust the envelope for the new note.  If accent is enabled, overshoot it then come back down.
@@ -528,7 +528,7 @@ impl Director {
         else {
             let shape = self.phonemes.get_vowel_shape(c).unwrap();
             let nasal_coupling = self.phonemes.get_nasal_coupling(c);
-            self.add_shape_transition(delay, vowel_transition_time, shape.clone(), nasal_coupling, note_index);
+            self.add_shape_transition(delay, vowel_transition_time, shape.clone(), nasal_coupling, note_index, true);
         }
         let scale = if legato {0.9} else if is_final {0.25} else {0.7};
         let amplification = scale*self.phonemes.get_amplification(c);
@@ -545,11 +545,11 @@ impl Director {
         let nasal_coupling = self.phonemes.get_nasal_coupling(vowel2);
         if let Some(intermediate_shape) = self.phonemes.get_intermediate_shape(vowel1, vowel2) {
             let intermediate_coupling = 0.5*(self.nasal_coupling_after_transitions+nasal_coupling);
-            self.add_shape_transition(delay, vowel_transition_time/2, intermediate_shape.clone(), intermediate_coupling, note_index);
-            self.add_shape_transition(delay+vowel_transition_time/2, vowel_transition_time/2, shape, nasal_coupling, note_index);
+            self.add_shape_transition(delay, vowel_transition_time/2, intermediate_shape.clone(), intermediate_coupling, note_index, true);
+            self.add_shape_transition(delay+vowel_transition_time/2, vowel_transition_time/2, shape, nasal_coupling, note_index, true);
         }
         else {
-            self.add_shape_transition(delay, vowel_transition_time, shape, nasal_coupling, note_index);
+            self.add_shape_transition(delay, vowel_transition_time, shape, nasal_coupling, note_index, true);
         }
     }
 
@@ -575,14 +575,14 @@ impl Director {
             let nasal_coupling = self.phonemes.get_nasal_coupling(vowel);
             if is_final {
                 let end_shape = self.phonemes.get_consonant_shape(&consonant, vowel).unwrap().clone();
-                self.add_shape_transition(delay, consonant.transition_time, end_shape, nasal_coupling, note_index);
+                self.add_shape_transition(delay, consonant.transition_time, end_shape, nasal_coupling, note_index, false);
                 delay_to_vowel += consonant.transition_time;
             }
             else {
                 let start_shape = self.phonemes.get_consonant_shape(&consonant, vowel).unwrap().clone();
                 let end_shape = self.phonemes.get_vowel_shape(vowel).unwrap().clone();
-                self.add_shape_transition(delay, 1000, start_shape, 0.0, note_index);
-                self.add_shape_transition(delay+1000, consonant.transition_time, end_shape, nasal_coupling, note_index);
+                self.add_shape_transition(delay, 1000, start_shape, 0.0, note_index, false);
+                self.add_shape_transition(delay+1000, consonant.transition_time, end_shape, nasal_coupling, note_index, true);
                 delay_to_vowel += consonant.transition_time+1000;
             }
             if consonant.voiced {
@@ -612,14 +612,14 @@ impl Director {
     }
 
     /// Add a ShapeChange transition to the queue.
-    fn add_shape_transition(&mut self, delay: i64, duration: i64, mut end_shape: Vec<f32>, end_nasal_coupling: f32, note_index: i32) {
+    fn add_shape_transition(&mut self, delay: i64, duration: i64, mut end_shape: Vec<f32>, end_nasal_coupling: f32, note_index: i32, adjust_for_pitch: bool) {
         if end_nasal_coupling == 0.0 && self.brightness < 1.0 {
             let blend = (1.0-self.brightness)*0.2;
             for i in 0..end_shape.len() {
                 end_shape[i] = (1.0-blend)*end_shape[i] + blend*self.dark_shape[i];
             }
         }
-        if note_index > self.high_blend_note && end_nasal_coupling == 0.0 {
+        if note_index > self.high_blend_note && end_nasal_coupling == 0.0 && adjust_for_pitch {
             let blend = self.high_blend_fraction * (note_index-self.high_blend_note) as f32 / (self.highest_note-self.high_blend_note) as f32;
             for i in 0..end_shape.len() {
                 end_shape[i] = (1.0-blend)*end_shape[i] + blend*self.high_shape[i];
