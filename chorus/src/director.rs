@@ -18,6 +18,7 @@ use crate::filter::Filter;
 use crate::phonemes::{Consonant, Phonemes};
 use crate::random::Random;
 use crate::syllable::Syllable;
+use crate::exciter::Exciter;
 use crate::VoicePart;
 use std::f32::consts::PI;
 use std::sync::mpsc;
@@ -38,6 +39,7 @@ pub enum Message {
     SetReleaseRate {release: f32},
     SetAccent {accent: bool},
     SetStereoWidth {width: f32},
+    SetExciterStrength {strength: f32},
     SetMinVowelStartTime {samples: i64},
     SetMaxVoiceDelay {max_delay: i64},
     SetDelays {vowel_delay: i64, vowel_transition_time: i64, consonant_delay: i64, consonant_transition_time: i64},
@@ -114,6 +116,9 @@ pub struct Director {
     voice_pan: Vec<f32>,
     dark_shape: Vec<f32>,
     high_shape: Vec<f32>,
+    exciter_strength: f32,
+    left_exciter: Exciter,
+    right_exciter: Exciter,
     vowel_delay: i64,
     vowel_transition_time: i64,
     consonant_delay: i64,
@@ -166,6 +171,9 @@ impl Director {
             voice_pan: vec![],
             dark_shape: vec![],
             high_shape: vec![],
+            exciter_strength: 0.5,
+            left_exciter: Exciter::new(1000.0),
+            right_exciter: Exciter::new(1000.0),
             vowel_delay: 0,
             vowel_transition_time: 3500,
             consonant_delay: 3000,
@@ -203,9 +211,11 @@ impl Director {
         self.envelope_after_transitions = 0.0;
         self.frequency_after_transitions = 0.0;
         let vocal_length;
+        let exciter_cutoff;
         match voice_part {
             VoicePart::Soprano => {
                 vocal_length = 42;
+                exciter_cutoff = 1500.0;
                 self.lowest_note = 57;
                 self.highest_note = 88;
                 self.high_blend_note = 72;
@@ -213,6 +223,7 @@ impl Director {
             }
             VoicePart::Alto => {
                 vocal_length = 45;
+                exciter_cutoff = 1400.0;
                 self.lowest_note = 48;
                 self.highest_note = 79;
                 self.high_blend_note = 72;
@@ -220,6 +231,7 @@ impl Director {
             }
             VoicePart::Tenor => {
                 vocal_length = 48;
+                exciter_cutoff = 1300.0;
                 self.lowest_note = 43;
                 self.highest_note = 72;
                 self.high_blend_note = 64;
@@ -227,6 +239,7 @@ impl Director {
             }
             VoicePart::Bass => {
                 vocal_length = 52;
+                exciter_cutoff = 1200.0;
                 self.lowest_note = 36;
                 self.highest_note = 67;
                 self.high_blend_note = 60;
@@ -239,6 +252,8 @@ impl Director {
         for i in 0..self.high_shape.len() {
             self.high_shape[i] = 0.7*self.high_shape[i] + 0.3*self.dark_shape[i];
         }
+        self.left_exciter = Exciter::new(exciter_cutoff);
+        self.right_exciter = Exciter::new(exciter_cutoff);
         self.update_pan_positions();
         self.update_vibrato();
         self.update_volume();
@@ -724,6 +739,8 @@ impl Director {
                 self.consonants.remove(0);
             }
         }
+        left = self.left_exciter.process(left, self.exciter_strength);
+        right = self.right_exciter.process(right, self.exciter_strength);
         (0.08*left, 0.08*right)
     }
 
@@ -778,6 +795,9 @@ impl Director {
                         Message::SetStereoWidth {width} => {
                             self.stereo_width = width;
                             self.update_pan_positions();
+                        }
+                        Message::SetExciterStrength {strength} => {
+                            self.exciter_strength = strength;
                         }
                         Message::SetMinVowelStartTime {samples} => {
                             self.min_vowel_start = samples;

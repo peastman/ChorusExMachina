@@ -20,6 +20,7 @@ pub mod syllable;
 pub mod random;
 pub mod resampler;
 pub mod filter;
+pub mod exciter;
 
 pub const SAMPLE_RATE: i32 = 48000;
 

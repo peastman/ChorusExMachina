@@ -168,6 +168,9 @@ There are several parameters you can automate in a DAW to control the performanc
 - **Attack Rate**.  How quickly notes reach full volume.
 - **Release Rate**.  How quickly the sound stops at the end of a note.
 - **Stereo Width**.  How widely the singers are spread out in space.
+- **Exciter Strength**.  The strength of the harmonic exciter effect to apply to the output.  This
+  increases the amount of high frequency harmonics.  When used with restraint, it can improve
+  clarity and produce a fuller sound.
 - **Time Spread**.  The amount of delay between voices in the chorus.
 - **Vowel Delay**.  The delay in milliseconds from the start of each note to the beginning of the
   first vowel.

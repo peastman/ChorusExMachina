@@ -119,6 +119,7 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
         draw_param_slider(ui, &params.attack_rate, setter);
         draw_param_slider(ui, &params.release_rate, setter);
         draw_param_slider(ui, &params.stereo_width, setter);
+        draw_param_slider(ui, &params.exciter_strength, setter);
         ui.label("Time Spread (ms)");
         let mut spread = params.time_spread.value();
         if ui.add(egui::Slider::new(&mut spread, 0..=100)).changed() {

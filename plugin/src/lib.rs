@@ -39,6 +39,7 @@ pub struct ChorusExMachina {
     last_attack_rate: f32,
     last_release_rate: f32,
     last_stereo_width: f32,
+    last_exciter_strength: f32,
     last_time_spread: i32,
     last_vowel_delay: i32,
     last_accent: bool,
@@ -72,6 +73,8 @@ struct ChorusExMachinaParams {
     pub release_rate: FloatParam,
     #[id = "stereo_width"]
     pub stereo_width: FloatParam,
+    #[id = "exciter_strength"]
+    pub exciter_strength: FloatParam,
     #[id = "time_spread"]
     pub time_spread: IntParam,
     #[id = "vowel_delay"]
@@ -116,6 +119,7 @@ impl Default for ChorusExMachina {
             last_attack_rate: -1.0,
             last_release_rate: -1.0,
             last_stereo_width: -1.0,
+            last_exciter_strength: -1.0,
             last_time_spread: -1,
             last_vowel_delay: -1,
             last_accent: false,
@@ -140,6 +144,7 @@ impl Default for ChorusExMachinaParams {
             attack_rate: FloatParam::new("Attack Rate", 0.8, FloatRange::Linear {min: 0.0, max: 1.0}),
             release_rate: FloatParam::new("Release Rate", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
             stereo_width: FloatParam::new("Stereo Width", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
+            exciter_strength: FloatParam::new("Exciter Strength", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
             time_spread: IntParam::new("Time Spread", 40, IntRange::Linear {min: 0, max: 100}),
             vowel_delay: IntParam::new("Vowel Delay", 0, IntRange::Linear {min: 0, max: 250}),
             accent: BoolParam::new("Accent", false),
@@ -231,6 +236,10 @@ impl Plugin for ChorusExMachina {
         if self.last_stereo_width != self.params.stereo_width.value() {
             self.last_stereo_width = self.params.stereo_width.value();
             let _ = sender.send(Message::SetStereoWidth {width: self.last_stereo_width});
+        }
+        if self.last_exciter_strength != self.params.exciter_strength.value() {
+            self.last_exciter_strength = self.params.exciter_strength.value();
+            let _ = sender.send(Message::SetExciterStrength {strength: self.last_exciter_strength*0.9});
         }
         if self.last_time_spread != self.params.time_spread.value() {
             self.last_time_spread = self.params.time_spread.value();
