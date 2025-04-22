@@ -573,7 +573,7 @@ impl Director {
     fn add_consonant(&mut self, delay: i64, c: char, adjacent_vowel: Option<char>, is_final: bool, note_index: i32, time_scale: f32, amplify: f32) -> (i64, i64, i64) {
         let mut consonant = self.phonemes.get_consonant(c, adjacent_vowel, is_final, time_scale).unwrap();
         consonant.start = self.step+delay+consonant.delay;
-        consonant.volume *= 2.0*self.consonant_volume*amplify;
+        consonant.volume *= 2.5*self.consonant_volume*amplify;
         let delay_to_consonant = consonant.delay+consonant.on_time+consonant.off_time;
         let mut delay_to_vowel = consonant.delay;
         let mut envelope_offset = 0;
@@ -727,6 +727,9 @@ impl Director {
                             consonant_finished = false;
                         }
                     }
+                }
+                if self.volume < 0.5 {
+                    consonant_noise *= 0.25 + 1.5*self.volume;
                 }
 
                 // Generate audio for the voice, injecting the consonant noise if appropriate.
