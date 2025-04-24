@@ -26,7 +26,7 @@ jobs:
             zipname: mac-x86
 
           - name: Linux x86
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             zipname: linux-x86
 
           - name: Windows x86
