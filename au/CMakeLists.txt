@@ -24,7 +24,7 @@ target_add_auv2_wrapper(
         
         OUTPUT_NAME "Chorus Ex Machina"
         BUNDLE_IDENTIFIER "com.github.peastman.ChorusExMachina"
-        BUNDLE_VERSION "0.9.0"
+        BUNDLE_VERSION "1.0.0"
         MANUFACTURER_NAME "Chorus Ex Machina"
         MANUFACTURER_CODE "CEMa"
         SUBTYPE_CODE "----"
