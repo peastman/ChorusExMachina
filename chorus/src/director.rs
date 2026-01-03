@@ -334,9 +334,9 @@ impl Director {
             // Smoothly transition between the two notes.  The time and envelope shape depend both on how
             // large a jump we're making and on what vowel we're heading toward.
 
-            let transition_time = (1000 + 150*(current_note_index-note_index).abs()) as i64;
+            let transition_time = (2000 + 20*(current_note_index-note_index).abs()) as i64;
             self.add_transition(delay, transition_time, TransitionData::FrequencyChange {start_frequency: self.frequency_after_transitions, end_frequency: frequency});
-            let min_envelope = self.envelope_after_transitions*f32::powf(0.85, (current_note_index-note_index).abs() as f32);
+            let min_envelope = self.envelope_after_transitions*f32::max(0.5, 1.0-0.05*((current_note_index-note_index).abs() as f32));
             let first_vowel;
             if !continuous && new_syllable.initial_vowels.len() > 0 {
                 first_vowel = new_syllable.initial_vowels[0];
