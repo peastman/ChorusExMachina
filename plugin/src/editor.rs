@@ -1,4 +1,4 @@
-// Copyright 2025 by Peter Eastman
+// Copyright 2025-2026 by Peter Eastman
 //
 // This file is part of Chorus Ex Machina.
 //
@@ -121,7 +121,9 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
         draw_param_slider(ui, &params.release_rate, setter);
         draw_param_slider(ui, &params.stereo_width, setter);
         draw_param_slider(ui, &params.exciter_strength, setter);
-        ui.label("Time Spread (ms)");
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
+            ui.label("Time Spread (ms)");
+        });
         let mut spread = params.time_spread.value();
         if ui.add(egui::Slider::new(&mut spread, 0..=100).handle_shape(egui::style::HandleShape::Circle)).changed() {
             setter.begin_set_parameter(&params.time_spread);
@@ -129,7 +131,9 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
             setter.end_set_parameter(&params.time_spread);
         }
         ui.end_row();
-        ui.label("Vowel Delay (ms)");
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
+            ui.label("Vowel Delay (ms)");
+        });
         let mut delay = params.vowel_delay.value();
         if ui.add(egui::Slider::new(&mut delay, 0..=250).handle_shape(egui::style::HandleShape::Circle)).changed() {
             setter.begin_set_parameter(&params.vowel_delay);
@@ -153,7 +157,9 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
 }
 
 fn draw_param_slider(ui: &mut egui::Ui, param: &FloatParam, setter: &ParamSetter) {
-    ui.label(param.name());
+    ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
+        ui.label(param.name());
+    });
     let mut value = param.value();
     if ui.add(egui::Slider::new(&mut value, 0.0..=1.0).handle_shape(egui::style::HandleShape::Circle)).changed() {
         setter.begin_set_parameter(param);
@@ -241,7 +247,7 @@ fn draw_about_panel(ui: &mut egui::Ui) {
         ui.add_space(30.0);
         ui.label(egui::RichText::new("Chorus Ex Machina").size(36.0).italics());
         ui.label(egui::RichText::new(format!("version {}", env!("CARGO_PKG_VERSION"))).size(14.0));
-        ui.label(egui::RichText::new("Copyright 2025 by Peter Eastman").size(14.0));
+        ui.label(egui::RichText::new("Copyright 2025-2026 by Peter Eastman").size(14.0));
         ui.add_space(12.0);
         ui.hyperlink("https://github.com/peastman/ChorusExMachina");
     });
