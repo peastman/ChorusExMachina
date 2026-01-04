@@ -48,8 +48,9 @@ pub fn draw_editor(params: Arc<ChorusExMachinaParams>, sender: Arc<Mutex<mpsc::S
     create_egui_editor(
         params.editor_state.clone(),
         (),
-        |_, _| {},
-        move |ctx, setter, _state| {
+        Default::default(),
+        |_, _, _| {},
+        move |ctx, setter, _queue, _state| {
             egui::CentralPanel::default().show(ctx, |ui| {
                 egui::SidePanel::left("tabs").max_width(100.0).resizable(false).show_inside(ui, |ui| {
                     let mut state = state.lock().unwrap();
@@ -89,7 +90,7 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
         });
         ui.add_space(10.0);
         ui.label("Voices");
-        ui.add(egui::Slider::new(&mut new_voice_count, 1..=8));
+        ui.add(egui::Slider::new(&mut new_voice_count, 1..=8).handle_shape(egui::style::HandleShape::Circle));
     });
     if params.voice_part.value() != new_voice_part || params.voice_count.value() != new_voice_count {
         setter.begin_set_parameter(&params.voice_part);
@@ -122,7 +123,7 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
         draw_param_slider(ui, &params.exciter_strength, setter);
         ui.label("Time Spread (ms)");
         let mut spread = params.time_spread.value();
-        if ui.add(egui::Slider::new(&mut spread, 0..=100)).changed() {
+        if ui.add(egui::Slider::new(&mut spread, 0..=100).handle_shape(egui::style::HandleShape::Circle)).changed() {
             setter.begin_set_parameter(&params.time_spread);
             setter.set_parameter(&params.time_spread, spread);
             setter.end_set_parameter(&params.time_spread);
@@ -130,7 +131,7 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
         ui.end_row();
         ui.label("Vowel Delay (ms)");
         let mut delay = params.vowel_delay.value();
-        if ui.add(egui::Slider::new(&mut delay, 0..=250)).changed() {
+        if ui.add(egui::Slider::new(&mut delay, 0..=250).handle_shape(egui::style::HandleShape::Circle)).changed() {
             setter.begin_set_parameter(&params.vowel_delay);
             setter.set_parameter(&params.vowel_delay, delay);
             setter.end_set_parameter(&params.vowel_delay);
@@ -154,7 +155,7 @@ fn draw_controls_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, s
 fn draw_param_slider(ui: &mut egui::Ui, param: &FloatParam, setter: &ParamSetter) {
     ui.label(param.name());
     let mut value = param.value();
-    if ui.add(egui::Slider::new(&mut value, 0.0..=1.0)).changed() {
+    if ui.add(egui::Slider::new(&mut value, 0.0..=1.0).handle_shape(egui::style::HandleShape::Circle)).changed() {
         setter.begin_set_parameter(param);
         setter.set_parameter(param, value);
         setter.end_set_parameter(param);
@@ -194,7 +195,7 @@ fn draw_text_panel(ui: &mut egui::Ui, params: &Arc<ChorusExMachinaParams>, sette
                     clicked = response.clicked();
                 }
                 else {
-                    let width = ui.fonts(|f| f.glyph_width(&egui::TextStyle::Body.resolve(ui.style()), ' '));
+                    let width = ui.fonts_mut(|f| f.glyph_width(&egui::TextStyle::Body.resolve(ui.style()), ' '));
                     ui.spacing_mut().item_spacing.x = width;
                     for s in phrases[row_index].split_whitespace() {
                         match Syllable::build(s) {
