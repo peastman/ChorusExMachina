@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License along with Chorus Ex Machina.
 // If not, see <https://www.gnu.org/licenses/>.
 
-use crate::filter::ResonantFilter;
+use crate::filter::{ResonantFilter, LowpassFilter};
 use crate::VoicePart;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -403,6 +403,7 @@ impl Phonemes {
             volume: volume,
             position: (position as f32/ratio).round() as usize,
             filter: ResonantFilter::new(frequency*freq_ratio, bandwidth*freq_ratio),
+            lowpass: LowpassFilter::new(2700.0),
             mono: mono,
             voiced: voiced,
             shape: ConsonantShape {base_shape: base_shape, blend: blend, constrict: constrict},
@@ -600,6 +601,7 @@ pub struct Consonant {
     pub volume: f32,
     pub position: usize,
     pub filter: ResonantFilter,
+    pub lowpass: LowpassFilter,
     pub mono: bool,
     pub voiced: bool,
     pub shape: ConsonantShape,
