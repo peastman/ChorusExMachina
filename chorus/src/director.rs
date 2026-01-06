@@ -703,7 +703,7 @@ impl Director {
                                 let index = consonant.sample_indices[i];
                                 consonant_duration = consonant.samples[index].len() as i64;
                                 if j < consonant_duration {
-                                    consonant_noise = 50.0*consonant.volume*(consonant.samples[index][j as usize] as f32)/32768.0;
+                                    consonant_noise = consonant.lowpass.process(50.0*consonant.volume*(consonant.samples[index][j as usize] as f32)/32768.0);
                                 }
                             }
                             else {
