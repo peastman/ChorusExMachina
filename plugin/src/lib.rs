@@ -1,4 +1,4 @@
-// Copyright 2025 by Peter Eastman
+// Copyright 2025-2026 by Peter Eastman
 //
 // This file is part of Chorus Ex Machina.
 //
@@ -135,17 +135,17 @@ impl Default for ChorusExMachinaParams {
             editor_state: EguiState::from_size(600, 400),
             phrases: Mutex::new(vec!["".to_string(); 128]),
             voice_part: EnumParam::new("Voice Part", VoicePart::Soprano).non_automatable(),
-            voice_count: IntParam::new("Voices", 4, IntRange::Linear {min: 1, max: 8}).non_automatable(),
+            voice_count: IntParam::new("Voices", 8, IntRange::Linear {min: 1, max: 8}).non_automatable(),
             dynamics: FloatParam::new("Dynamics", 1.0, FloatRange::Linear {min: 0.0, max: 1.0}),
             vibrato: FloatParam::new("Vibrato", 0.4, FloatRange::Linear {min: 0.0, max: 1.0}),
             intensity: FloatParam::new("Intensity", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
             brightness: FloatParam::new("Brightness", 1.0, FloatRange::Linear {min: 0.0, max: 1.0}),
             consonant_volume: FloatParam::new("Consonant Volume", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
-            attack_rate: FloatParam::new("Attack Rate", 0.8, FloatRange::Linear {min: 0.0, max: 1.0}),
+            attack_rate: FloatParam::new("Attack Rate", 0.75, FloatRange::Linear {min: 0.0, max: 1.0}),
             release_rate: FloatParam::new("Release Rate", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
-            stereo_width: FloatParam::new("Stereo Width", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
+            stereo_width: FloatParam::new("Stereo Width", 0.7, FloatRange::Linear {min: 0.0, max: 1.0}),
             exciter_strength: FloatParam::new("Exciter Strength", 0.5, FloatRange::Linear {min: 0.0, max: 1.0}),
-            time_spread: IntParam::new("Time Spread", 40, IntRange::Linear {min: 0, max: 100}),
+            time_spread: IntParam::new("Time Spread", 50, IntRange::Linear {min: 0, max: 100}),
             vowel_delay: IntParam::new("Vowel Delay", 0, IntRange::Linear {min: 0, max: 250}),
             accent: BoolParam::new("Accent", false),
             selected_phrase: IntParam::new("Selected Phrase", 0, IntRange::Linear {min: 0, max: 127}),
