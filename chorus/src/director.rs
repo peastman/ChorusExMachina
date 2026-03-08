@@ -1,4 +1,4 @@
-// Copyright 2025 by Peter Eastman
+// Copyright 2025-2026 by Peter Eastman
 //
 // This file is part of Chorus Ex Machina.
 //
@@ -15,13 +15,15 @@
 
 use crate::voice::Voice;
 use crate::filter::Filter;
-use crate::phonemes::{Consonant, Phonemes};
+use crate::phonemes::{Consonant, Phonemes, parse_flac};
 use crate::random::Random;
+use crate::reverb::Reverb;
 use crate::syllable::Syllable;
 use crate::exciter::Exciter;
 use crate::VoicePart;
 use std::f32::consts::PI;
 use std::sync::mpsc;
+use realfft::RealFftPlanner;
 
 /// A message that can be sent to a Director.  Messages roughly correspond to MIDI events:
 /// note on, note off, and various control channels.
@@ -88,6 +90,7 @@ pub struct Director {
     high_blend_fraction: f32,
     phonemes: Phonemes,
     random: Random,
+    fft_planner: RealFftPlanner::<f32>,
     step: i64,
     transitions: Vec<Transition>,
     current_note: Option<Note>,
@@ -114,8 +117,10 @@ pub struct Director {
     message_receiver: mpsc::Receiver<Message>,
     stereo_width: f32,
     voice_pan: Vec<f32>,
+    reverb: Vec<Reverb>,
     dark_shape: Vec<f32>,
     high_shape: Vec<f32>,
+    chest_resonance: f32,
     exciter_strength: f32,
     left_exciter: Exciter,
     right_exciter: Exciter,
@@ -143,6 +148,7 @@ impl Director {
             high_blend_fraction: 0.0,
             phonemes: Phonemes::new(voice_part),
             random: Random::new(),
+            fft_planner: RealFftPlanner::<f32>::new(),
             step: 0,
             transitions: vec![],
             current_note: None,
@@ -169,8 +175,10 @@ impl Director {
             message_receiver: message_receiver,
             stereo_width: 0.3,
             voice_pan: vec![],
+            reverb: vec![],
             dark_shape: vec![],
             high_shape: vec![],
+            chest_resonance: 0.1,
             exciter_strength: 0.5,
             left_exciter: Exciter::new(1000.0),
             right_exciter: Exciter::new(1000.0),
@@ -212,6 +220,7 @@ impl Director {
         self.frequency_after_transitions = 0.0;
         let vocal_length;
         let exciter_cutoff;
+        let ir;
         match voice_part {
             VoicePart::Soprano => {
                 vocal_length = 42;
@@ -220,6 +229,7 @@ impl Director {
                 self.highest_note = 88;
                 self.high_blend_note = 72;
                 self.high_blend_fraction = 0.3;
+                ir = parse_flac(include_bytes!("resonance/soprano-resonance.flac"));
             }
             VoicePart::Alto => {
                 vocal_length = 45;
@@ -228,6 +238,7 @@ impl Director {
                 self.highest_note = 79;
                 self.high_blend_note = 72;
                 self.high_blend_fraction = 0.15;
+                ir = parse_flac(include_bytes!("resonance/alto-resonance.flac"));
             }
             VoicePart::Tenor => {
                 vocal_length = 48;
@@ -236,6 +247,7 @@ impl Director {
                 self.highest_note = 72;
                 self.high_blend_note = 64;
                 self.high_blend_fraction = 0.1;
+                ir = parse_flac(include_bytes!("resonance/tenor-resonance.flac"));
             }
             VoicePart::Bass => {
                 vocal_length = 52;
@@ -244,7 +256,13 @@ impl Director {
                 self.highest_note = 67;
                 self.high_blend_note = 60;
                 self.high_blend_fraction = 0.1;
+                ir = parse_flac(include_bytes!("resonance/bass-resonance.flac"));
             }
+        }
+        self.reverb.clear();
+        self.reverb.push(Reverb::new(&ir, &mut self.fft_planner));
+        if voice_count > 1 {
+            self.reverb.push(Reverb::new(&ir, &mut self.fft_planner));
         }
         self.shape_after_transitions = vec![vec![0.0; vocal_length]; voice_count];
         self.dark_shape = self.phonemes.get_vowel_shape('o').unwrap().clone();
@@ -703,7 +721,7 @@ impl Director {
                                 let index = consonant.sample_indices[i];
                                 consonant_duration = consonant.samples[index].len() as i64;
                                 if j < consonant_duration {
-                                    consonant_noise = consonant.lowpass.process(50.0*consonant.volume*(consonant.samples[index][j as usize] as f32)/32768.0);
+                                    consonant_noise = consonant.lowpass.process(50.0*consonant.volume*consonant.samples[index][j as usize]);
                                 }
                             }
                             else {
@@ -744,6 +762,13 @@ impl Director {
         }
         left = self.left_exciter.process(left, self.exciter_strength);
         right = self.right_exciter.process(right, self.exciter_strength);
+        left += self.chest_resonance*self.reverb[0].process(left);
+        if self.reverb.len() == 1 {
+            right = left;
+        }
+        else {
+            right += self.chest_resonance*self.reverb[1].process(right);
+        }
         (0.08*left, 0.08*right)
     }
 
