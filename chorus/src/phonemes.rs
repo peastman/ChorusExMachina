@@ -422,11 +422,11 @@ impl Phonemes {
     }
 
     /// Set the data for a sampled consonant.
-    fn set_consonant_samples(&mut self, consonant: char, mut samples: Vec<Vec<i16>>, amplify: f32) {
+    fn set_consonant_samples(&mut self, consonant: char, mut samples: Vec<Vec<f32>>, amplify: f32) {
         if amplify != 1.0 {
             for i in 0..samples.len() {
                 for j in 0..samples[i].len() {
-                    samples[i][j] = (samples[i][j] as f32 * amplify) as i16;
+                    samples[i][j] = samples[i][j]*amplify;
                 }
             }
         }
@@ -559,14 +559,14 @@ impl Phonemes {
 }
 
 /// Convert a FLAC encoded sample to raw audio data.
-fn parse_flac(file: &[u8]) -> Vec<i16> {
+pub fn parse_flac(file: &[u8]) -> Vec<f32> {
     let mut reader = claxon::FlacReader::new(file).unwrap();
     assert_eq!(48000, reader.streaminfo().sample_rate);
     assert_eq!(1, reader.streaminfo().channels);
     assert_eq!(16, reader.streaminfo().bits_per_sample);
     let mut samples = Vec::new();
     for sample in reader.samples() {
-        samples.push(sample.unwrap() as i16);
+        samples.push((sample.unwrap() as f32)/32768.0);
     }
     samples
 }
@@ -605,6 +605,6 @@ pub struct Consonant {
     pub mono: bool,
     pub voiced: bool,
     pub shape: ConsonantShape,
-    pub samples: Arc<Vec<Vec<i16>>>,
+    pub samples: Arc<Vec<Vec<f32>>>,
     pub sample_indices: Vec<usize>
 }
