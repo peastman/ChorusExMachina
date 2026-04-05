@@ -6,5 +6,3 @@ edition = "2021"
 [dependencies]
 getrandom = "0.2.15"
 claxon = "0.4.3"
-rustfft = "6.4.1"
-realfft = "3.5.0"

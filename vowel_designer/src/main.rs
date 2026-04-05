@@ -311,7 +311,8 @@ impl Iterator for AudioSource {
         if player.note_playing {
             let step = player.step;
             for voice in &mut player.voices {
-                output += voice.generate(step, 0.0, 1);
+                let (mouth_output, throat_output) = voice.generate(step, 0.0, 1);
+                output += mouth_output+0.3*throat_output;
             }
             player.step += 1;
         }
