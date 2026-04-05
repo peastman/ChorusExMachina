@@ -19,7 +19,6 @@ pub mod director;
 pub mod syllable;
 pub mod random;
 pub mod resampler;
-pub mod reverb;
 pub mod filter;
 pub mod exciter;
 

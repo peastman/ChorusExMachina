@@ -15,14 +15,13 @@
 
 use crate::voice::Voice;
 use crate::filter::Filter;
-use crate::phonemes::{Consonant, Phonemes, parse_flac};
+use crate::phonemes::{Consonant, Phonemes};
 use crate::random::Random;
 use crate::syllable::Syllable;
 use crate::exciter::Exciter;
 use crate::VoicePart;
 use std::f32::consts::PI;
 use std::sync::mpsc;
-use realfft::RealFftPlanner;
 
 /// A message that can be sent to a Director.  Messages roughly correspond to MIDI events:
 /// note on, note off, and various control channels.
@@ -89,7 +88,6 @@ pub struct Director {
     high_blend_fraction: f32,
     phonemes: Phonemes,
     random: Random,
-    fft_planner: RealFftPlanner::<f32>,
     step: i64,
     transitions: Vec<Transition>,
     current_note: Option<Note>,
@@ -145,7 +143,6 @@ impl Director {
             high_blend_fraction: 0.0,
             phonemes: Phonemes::new(voice_part),
             random: Random::new(),
-            fft_planner: RealFftPlanner::<f32>::new(),
             step: 0,
             transitions: vec![],
             current_note: None,
