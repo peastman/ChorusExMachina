@@ -315,7 +315,7 @@ impl Voice {
     /// Generate the next audio sample.  Arguments are the current sample index, the noise signal
     /// to inject into the vocal tract (to simulate consonants), and the position at which to
     /// inject it.
-    pub fn generate(&mut self, step: i64, mut noise: f32, noise_position: usize) -> f32 {
+    pub fn generate(&mut self, step: i64, mut noise: f32, noise_position: usize) -> (f32, f32) {
         let noise_area = self.vocal.area[noise_position];
         if noise_area > 0.0 {
             if noise_area < 0.2 {
@@ -374,6 +374,6 @@ impl Voice {
                 }
             }
         }
-        self.vocal.right[n-1] + self.nasal.right[nasal_n-1]
+        (self.vocal.right[n-1] + self.nasal.right[nasal_n-1], self.vocal.right[0])
     }
 }

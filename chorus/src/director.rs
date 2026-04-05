@@ -17,7 +17,6 @@ use crate::voice::Voice;
 use crate::filter::Filter;
 use crate::phonemes::{Consonant, Phonemes, parse_flac};
 use crate::random::Random;
-use crate::reverb::Reverb;
 use crate::syllable::Syllable;
 use crate::exciter::Exciter;
 use crate::VoicePart;
@@ -117,10 +116,8 @@ pub struct Director {
     message_receiver: mpsc::Receiver<Message>,
     stereo_width: f32,
     voice_pan: Vec<f32>,
-    reverb: Vec<Reverb>,
     dark_shape: Vec<f32>,
     high_shape: Vec<f32>,
-    chest_resonance: f32,
     exciter_strength: f32,
     left_exciter: Exciter,
     right_exciter: Exciter,
@@ -175,10 +172,8 @@ impl Director {
             message_receiver: message_receiver,
             stereo_width: 0.3,
             voice_pan: vec![],
-            reverb: vec![],
             dark_shape: vec![],
             high_shape: vec![],
-            chest_resonance: 0.1,
             exciter_strength: 0.5,
             left_exciter: Exciter::new(1000.0),
             right_exciter: Exciter::new(1000.0),
@@ -220,7 +215,6 @@ impl Director {
         self.frequency_after_transitions = 0.0;
         let vocal_length;
         let exciter_cutoff;
-        let ir;
         match voice_part {
             VoicePart::Soprano => {
                 vocal_length = 42;
@@ -229,7 +223,6 @@ impl Director {
                 self.highest_note = 88;
                 self.high_blend_note = 72;
                 self.high_blend_fraction = 0.3;
-                ir = parse_flac(include_bytes!("resonance/soprano-resonance.flac"));
             }
             VoicePart::Alto => {
                 vocal_length = 45;
@@ -238,7 +231,6 @@ impl Director {
                 self.highest_note = 79;
                 self.high_blend_note = 72;
                 self.high_blend_fraction = 0.15;
-                ir = parse_flac(include_bytes!("resonance/alto-resonance.flac"));
             }
             VoicePart::Tenor => {
                 vocal_length = 48;
@@ -247,7 +239,6 @@ impl Director {
                 self.highest_note = 72;
                 self.high_blend_note = 64;
                 self.high_blend_fraction = 0.1;
-                ir = parse_flac(include_bytes!("resonance/tenor-resonance.flac"));
             }
             VoicePart::Bass => {
                 vocal_length = 52;
@@ -256,13 +247,7 @@ impl Director {
                 self.highest_note = 67;
                 self.high_blend_note = 60;
                 self.high_blend_fraction = 0.1;
-                ir = parse_flac(include_bytes!("resonance/bass-resonance.flac"));
             }
-        }
-        self.reverb.clear();
-        self.reverb.push(Reverb::new(&ir, &mut self.fft_planner));
-        if voice_count > 1 {
-            self.reverb.push(Reverb::new(&ir, &mut self.fft_planner));
         }
         self.shape_after_transitions = vec![vec![0.0; vocal_length]; voice_count];
         self.dark_shape = self.phonemes.get_vowel_shape('o').unwrap().clone();
@@ -696,6 +681,8 @@ impl Director {
         }
         let mut left = 0.0;
         let mut right = 0.0;
+        let mut left_throat = 0.0;
+        let mut right_throat = 0.0;
         if self.step < self.off_after_step {
             let mut consonant_finished = self.consonants.len() > 0;
 
@@ -752,9 +739,11 @@ impl Director {
 
                 // Generate audio for the voice, injecting the consonant noise if appropriate.
 
-                let signal = self.voices[i].generate(self.step, consonant_noise, consonant_position);
-                left += self.voice_pan[i].cos()*signal;
-                right += self.voice_pan[i].sin()*signal;
+                let (mouth_output, throat_output) = self.voices[i].generate(self.step, consonant_noise, consonant_position);
+                left += self.voice_pan[i].cos()*mouth_output;
+                right += self.voice_pan[i].sin()*mouth_output;
+                left_throat += self.voice_pan[i].cos()*throat_output;
+                right_throat += self.voice_pan[i].sin()*throat_output;
             }
             if consonant_finished {
                 self.consonants.remove(0);
@@ -762,14 +751,7 @@ impl Director {
         }
         left = self.left_exciter.process(left, self.exciter_strength);
         right = self.right_exciter.process(right, self.exciter_strength);
-        left += self.chest_resonance*self.reverb[0].process(left);
-        if self.reverb.len() == 1 {
-            right = left;
-        }
-        else {
-            right += self.chest_resonance*self.reverb[1].process(right);
-        }
-        (0.08*left, 0.08*right)
+        (0.08*(left+0.3*left_throat), 0.08*(right+0.3*right_throat))
     }
 
     /// This is called occasionally by generate().  It processes any Messages that have been
